@@ -1,0 +1,21 @@
+# Add 127.0.0.1 prometheus.local.io 
+# to your /etc/hosts file to access Prometheus locally
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus
+  namespace: monitoring
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+  - host: prometheus.local.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus-server  
+            port:
+              number: 80
