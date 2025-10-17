@@ -1,0 +1,21 @@
+# Add 127.0.0.1 demo.boutique.local.io 
+# to your /etc/hosts file to access Google Boutique Store locally
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: boutique
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+  - host: demo.boutique.local.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
