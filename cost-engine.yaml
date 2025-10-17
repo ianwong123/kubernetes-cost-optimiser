@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cost-engine-script
+  namespace: monitoring
+data:
+  cost_engine.py: |
+    from prometheus_client import Gauge, start_http_server
+    import time
+    import math
+    import requests
+
+    estimated_cost = Gauge('kubernetes_estimated_hourly_cost', 'Estimated hourly cost in USD')
+    estimated_vms = Gauge('kubernetes_estimated_vms_needed', 'Number of VMs needed')
+    cpu_vms_needed = Gauge('kubernetes_cpu_vms_needed', 'VMs needed for CPU requests')
+    memory_vms_needed = Gauge('kubernetes_memory_vms_needed', 'VMs needed for memory requests')
+    cost_by_namespace = Gauge('kubernetes_cost_by_namespace', 'Cost by namespace', ['namespace'])
+
+    PROMETHEUS_URL = "http://prometheus-server:80"
+    B2S_HOURLY_RATE = 0.04
+    B2S_CPU_CORES = 2
+    B2S_MEMORY_GB = 4
+
+    def get_total_cpu_requests():
+        query = 'sum(kube_pod_container_resource_requests{resource="cpu"})'
+        response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={'query': query})
+        result = response.json()
+        if result['status'] == 'success' and result['data']['result']:
+            return float(result['data']['result'][0]['value'][1])
+        return 0.0
+
+    def get_total_memory_requests():
+        query = 'sum(kube_pod_container_resource_requests{resource="memory"})'
+        response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={'query': query})
+        result = response.json()
+        if result['status'] == 'success' and result['data']['result']:
+            bytes_value = float(result['data']['result'][0]['value'][1])
+            return bytes_value / (1024 ** 3)
+        return 0.0
+
+    def calculate_cost():
+        try:
+            total_cpu = get_total_cpu_requests()
+            total_memory = get_total_memory_requests()
+            cpu_vms = math.ceil(total_cpu / B2S_CPU_CORES)
+            mem_vms = math.ceil(total_memory / B2S_MEMORY_GB)
+            vms_needed = max(cpu_vms, mem_vms)
+            cost = vms_needed * B2S_HOURLY_RATE
+            
+            estimated_cost.set(cost)
+            estimated_vms.set(vms_needed)
+            cpu_vms_needed.set(cpu_vms)
+            memory_vms_needed.set(mem_vms)
+            
+            print(f"CPU: {total_cpu:.2f} cores -> {cpu_vms} VMs")
+            print(f"Memory: {total_memory:.2f} GB -> {mem_vms} VMs")
+            print(f"VMs needed: {vms_needed}, Cost: ${cost:.4f}/hour")
+        except Exception as e:
+            print(f"Error: {e}")
+    
+    def calculate_namespace_costs():
+        query_cpu = 'sum(kube_pod_container_resource_requests{resource="cpu"}) by (namespace)'
+        query_mem = 'sum(kube_pod_container_resource_requests{resource="memory"}) by (namespace)'
+        
+        response_cpu = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={'query': query_cpu})
+        response_mem = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={'query': query_mem})
+        
+        cpu_data = response_cpu.json()['data']['result']
+        mem_data = response_mem.json()['data']['result']
+        
+        for cpu_entry in cpu_data:
+            namespace = cpu_entry['metric']['namespace']
+            cpu_cores = float(cpu_entry['value'][1])
+            
+            mem_bytes = 0
+            for mem_entry in mem_data:
+                if mem_entry['metric']['namespace'] == namespace:
+                    mem_bytes = float(mem_entry['value'][1])
+                    break
+            
+            mem_gb = mem_bytes / (1024 ** 3)
+            cpu_vms = math.ceil(cpu_cores / B2S_CPU_CORES)
+            mem_vms = math.ceil(mem_gb / B2S_MEMORY_GB)
+            vms = max(cpu_vms, mem_vms)
+            cost = vms * B2S_HOURLY_RATE
+            
+            cost_by_namespace.labels(namespace=namespace).set(cost)
+
+
+    def main():
+        print("Starting cost engine on port 8000...")
+        start_http_server(8000)
+        while True:
+            calculate_cost()
+            calculate_namespace_costs()
+            time.sleep(15)
+
+    if __name__ == "__main__":
+        main()
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cost-engine
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cost-engine
+  template:
+    metadata:
+      labels:
+        app: cost-engine
+    spec:
+      containers:
+      - name: cost-engine
+        image: python:3.11-slim
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            pip install --no-cache-dir prometheus-client requests
+            python /app/cost_engine.py
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 8000
+          initialDelaySeconds: 45
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        volumeMounts:
+        - name: script
+          mountPath: /app
+      volumes:
+      - name: script
+        configMap:
+          name: cost-engine-script
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cost-engine
+  namespace: monitoring
+spec:
+  selector:
+    app: cost-engine
+  ports:
+  - port: 8000
+    targetPort: 8000
