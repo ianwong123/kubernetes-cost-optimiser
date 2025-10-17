@@ -1,0 +1,21 @@
+# Add 127.0.0.1 grafana.local.io 
+# to your /etc/hosts file to access Grafana locally
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: 
+  name: grafana
+  namespace: monitoring
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+  - host: grafana.local.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 80 
