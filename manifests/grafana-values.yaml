@@ -1,0 +1,26 @@
+# grafana-values.yaml
+admin:
+  existingSecret: grafana-sealed-secret
+
+persistence: 
+  enabled: true
+  size: 10Gi
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "512Mi"
+    cpu: "300m"
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus-server.monitoring.svc.cluster.local:80
+      access: proxy
+      isDefault: true
+      editable: true
