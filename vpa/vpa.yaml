@@ -1,0 +1,192 @@
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-adservice
+  namespace: default
+  labels:
+    app: adservice
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: adservice
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-cartservice
+  namespace: default
+  labels:
+    app: cartservice
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: cartservice
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-checkoutservice
+  namespace: default
+  labels:
+    app: checkoutservice
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: checkoutservice
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-currencyservice
+  namespace: default
+  labels:
+    app: currencyservice
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: currencyservice
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-emailservice
+  namespace: default
+  labels:
+    app: emailservice
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: emailservice
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-frontend
+  namespace: default
+  labels:
+    app: frontend
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: frontend
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-loadgenerator
+  namespace: default
+  labels:
+    app: loadgenerator
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: loadgenerator
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-paymentservice
+  namespace: default
+  labels:
+    app: paymentservice
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: paymentservice
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-productcatalogservice
+  namespace: default
+  labels:
+    app: productcatalogservice
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: productcatalogservice
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-recommendationservice
+  namespace: default
+  labels:
+    app: recommendationservice
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: recommendationservice
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-redis-cart
+  namespace: default
+  labels:
+    app: redis-cart
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: redis-cart
+  updatePolicy:
+    updateMode: "Recreate"
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vpa-shippingservice
+  namespace: default
+  labels:
+    app: shippingservice
+    managed-by: vpa-controller
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: shippingservice
+  updatePolicy:
+    updateMode: "Recreate"
