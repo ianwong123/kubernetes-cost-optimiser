@@ -1,42 +1,44 @@
 # Cost Model Specification
 This document defines the cost calculation model that converts CPU and memory **requests** into equivalent Virtual Machines (VM) instances to simulate infrastructure spending.
 
-In this README:
+In this document:
 * [The Concept](#the-concept)
 * [Cost Model](#cost-model)
-* [Initial VM Configuration](#initial-vm-configuration)
+* [Initial Configuration](#initial-configuration)
 * [Example Calculation](#example-cacluation)
-* [Implementation Notes](#implementation-notes)
 * [Limitations](#limitations)
 
 ## The Concept
-The ceiling function **represents** Kubernetes' scheduling and cloud billing:
-* Kubernetes cannot allocate partial VMs - each pod must fit entirely on a node
-* Cloud providers charge for entire VM instances, not partial capacity
-* Matches real-world billing where you pay for **reserved capacity**, not usage
+"You pay for what you request, not what you use."
+
+Cloud providers charge for an entire VM instance regardless of how much resources are used, while Kubernetes scheduling requires pods to fit completely on nodes. This combination forces over-provisioning.
+
+Consider a deployment requesting 4 vCPU and 8 GiB memory running on 2 vCPU and 4 GiB nodes. The cluster must reserve two full VMs even if actual usage averages just 10%. You're paying for 20x more capacity than you need. This could be a direct result of risk-averse resource allocation.
 
 ## Cost Model
-The cost is calculated based on the most constrained resource, following Kubernetes' scheduling principle:
+To capture this financial impact, the cost model below translates resource requests into VM costs using Kubernetes' own scheduling logic. The calculation identifies the most constrained resource, whether CPU or memory, and uses the **ceil** function that **conceptually represent** real-world cloud billing:
 
 $$
-Cost = \max\left(\left\lceil\frac{CPU_{request}}{CPU_{quota}}\right\rceil, \left\lceil\frac{Memory_{request}}{Memory_{quota}}\right\rceil\right) \times VM_{hourly\ rate}
+\mathit{Cost} = \max\left(
+\text{ceil}\!\left\lceil \frac{CPU_{request}}{CPU_{quota}} \right\rceil,
+\text{ceil}\!\left\lceil \frac{Memory_{request}}{Memory_{quota}} \right\rceil
+\right)
+\times VM_{hourly\ rate}
 $$
 
-## Initial VM Configuration
-The model currently uses **Azure D2as v4** instances:
+## Initial Configuration
+For initial validation, the model uses **Azure D2s_v5** instances as a reference point:
 
-| Resource | Capacity | Hourly Rate |
-|----------|----------|-------------|
-| CPU | 2 vCPU | $0.096 |
-| Memory | 8 GB | $0.096 |
+| VM Instance | CPU | Memory | Hourly Rate |
+|-------------|-----|--------|-------------|
+| Azure D2s_v5 | 2 vCPU | 8 GiB | $0.096 |
 
-*Future research will include multiple VM types and specialised instances (e.g., databases).*
-
+This single-instance approach establishes a consistent baseline. Future iterations will incorporate multiple VM types and specialised instances (e.g., storage, databases, containers, etc,.) once the core optimisation is proven.
 
 ## Example Calculation
-For a deployment with:
+Take a deployment with:
 - **Total CPU Requests**: 3.6 vCPU  
-- **Total Memory Requests**: 9 GB
+- **Total Memory Requests**: 9 GiB
 
 $$
 \begin{aligned}
@@ -47,15 +49,14 @@ $$
 \end{aligned}
 $$
 
-The model calculates the **theoretical minimum** number of VMs needed if perfectly packed. In practice, resource fragmentation might require slightly more VMs, but this provides the optimal baseline for cost optimisation.
-
+This calculates the **theoretical minimum** number of VMs required to fit all pods based on their resource requests. While real clusters may need additional nodes due to mixed workloads and scheduling constraints, this provides the optimal baseline for cost optimisation.
 
 ## Limitations
-* **Single VM type** - uses one instance type instead of optimising across multiple families
-* **No discounts** - doesn't account for spot instances, reserved instances, or enterprise discounts  
-* **Excluded costs** - ignores storage, networking, load balancers, and other cloud services
-* **Simplified scheduling** - assumes perfect bin-packing without fragmentation
+* The current implementation uses a single VM type rather than optimising across instance families
+* Real-world discounts like spot instances and reserved commitments aren't yet factored in
+* Additional costs for storage, networking, load balancers, and other cloud services remain outside scope
+* The model calculates optimal packing but doesn't account for real-world scheduling constraints like node affinity rules or mixed workload patterns that can increase the actual VM count needed.
 
 *The current model focuses on establishing the core cost optimisation concept. Additional cost factors will be integrated once the main resource right-sizing mechanism is validated.*
 
-> Note: This README is still a work in progress
+> Note: This document is still a work in progress.
