@@ -10,7 +10,7 @@ In this README:
 
 
 ## How it works
-The system operates on a core design principle: **we assume fixed replica counts to optimise resource requests**, eliminating over-provisioning at its source. This focuses the optimisation on the fundamental unit of cost (i.e. individual pod request), rather than multiplying inefficiency by scaling replica counts. It functions as a continuous feedback loop with components running at different intervals:
+The system operates on a core design principle: **we assume fixed replica counts to optimise resource requests**, eliminating over-provisioning at its source. This focuses the optimisation on the fundamental unit of cost (i.e. individual pod request), rather than multiplying inefficiency by scaling replica counts. It functions as a continuous feedback loop with components running at different intervals: 
 
 ### Monitoring and Analysis
 * **Prometheus** scrapes pod CPU/memory usage from a k3d cluster every **15 seconds**
@@ -106,7 +106,7 @@ cd kubernetes-cost-optimiser
 
 ## More information
 Here are some other documents you may wish to read:
-* cost-model.md (TBA)
+* [cost-model.md](cost-model.md)
 * agent-internal-workflow.md (TBA)
 
-> Note: This is not a google project. This is an independent project
+> Note: This is not a google project. This is an independent project and is still a work in progress.
