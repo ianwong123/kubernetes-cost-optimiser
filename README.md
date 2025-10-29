@@ -3,14 +3,18 @@ An autonomous system that reduces cloud costs by dynamically right-sizing Kubern
 resources, eliminating over-provisioning without performance degradation.
 
 In this README:
-* [How it works](#how-it-works)
-* [Architecture overview](#architecture-overview)
+* [How it Works](#how-it-works)
+* [Architecture Overview](#architecture-overview)
 * [More Information](#more-information)
 <!--* [Install](#install)-->
 
 
-## How it works
-The system operates on a core design principle: **we assume fixed replica counts to optimise resource requests**, eliminating over-provisioning at its source. This focuses the optimisation on the fundamental unit of cost (i.e. individual pod request), rather than multiplying inefficiency by scaling replica counts. It functions as a continuous feedback loop with components running at different intervals: 
+## How it Works
+The system operates on a core design principle: **we assume fixed replica counts to optimise resource requests**, eliminating over-provisioning at its source. This focuses the optimisation on the fundamental unit of cost (i.e. individual pod request), rather than multiplying inefficiency by scaling replica counts. 
+
+[Google's Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo), a cloud-native e-commerce demo application consisting of 11 microservices, serves as the sample workload to provide realistic, varied workload patterns (frontend, product catalog, cart service, etc,.) to validate the optimisation approach.
+
+The system functions a continuous feedback loop with components running at different intervals:
 
 ### Monitoring and Analysis
 * **Prometheus** scrapes pod CPU/memory usage from a k3d cluster every **15 seconds**
@@ -28,7 +32,12 @@ The system operates on a core design principle: **we assume fixed replica counts
 * **ArgoCD** automatically detects the Git commit and syncs the changes to the cluster.
 * Every modification is **versioned, auditable, and reversible**.
 
-## Architecture overview
+## Architecture Overview
+The system operates as a continuous feedback loop: 
+```Monitor -> Forecast -> Decide -> Deploy```
+
+The diagram below illustrates a high-level overview of the system architecture and data flow.
+
 ```mermaid 
 ---
 config:
@@ -104,7 +113,7 @@ cd kubernetes-cost-optimiser
 ```
 -->
 
-## More information
+## More Information
 Here are some other documents you may wish to read:
 * [cost-model.md](cost-model.md)
 * agent-internal-workflow.md (TBA)
