@@ -16,7 +16,7 @@ Cloud providers charge for an entire VM instance regardless of how much resource
 Consider a deployment requesting 4 vCPU and 8 GiB memory running on 2 vCPU and 4 GiB nodes. The cluster must reserve two full VMs even if actual usage averages just 10%. You're paying for 20x more capacity than you need. This could be a direct result of risk-averse resource allocation.
 
 ## Cost Model
-To capture this financial impact, the cost model below translates resource requests into VM costs using Kubernetes' own scheduling logic. The calculation identifies the most constrained resource, whether CPU or memory, and uses the **ceil** function that **conceptually represent** real-world cloud billing:
+To capture this financial impact, the cost model below translates resource requests into VM costs using Kubernetes' own scheduling logic. The calculation identifies the most constrained resource, whether CPU or memory, and uses the **ceil** function to **conceptually represent** real-world cloud billing:
 
 $$
 \mathit{Cost} = \max\left(
