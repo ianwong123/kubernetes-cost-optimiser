@@ -10,10 +10,28 @@ import os
 # This script predicts how much CPU and memory Kubernetes applications will need
 # tomorrow based on how much they used historically
 
+# It returns the following that will be pushed to Redis
+# - CPU requests
+# - CPU usage
+# - CPU usage predictions
+# - Memory requests
+# - Memory usage
+# - Memory usage predictions
+# - Number of VMs fetched from cost-engine
+# - Current hourly cost from cost-engine
+
 # Configuration
 PROMETHEUS_URL = "http://prometheus.local.io"
 NAMESPACE = "default"
 
+# Get all current resource requests
+def get_current_resource_requests(namespace):
+    """Fetch current CPU and memory requests"""
+
+def get_vm_and_cost_info():
+    """Fetch current number of VMs and hourly cost from cost-engine"""
+
+        
 # Get all deployment memory usage
 def get_deployment_memory_usage(namespace, hours=168):
     """
@@ -353,7 +371,12 @@ def display_detailed_forecast(forecasts, resource_type, summary_data, top_n=3):
         forecast_df = data['forecast']
         future_forecast = forecast_df.tail(24)
         
+        # Get current usage (latest data point)
+        historical_df = data['historical']
+        current_usage = historical_df['y'].iloc[-1] if len(historical_df) > 0 else 0
+        
         print(f"\n{i}. {deployment_name}")
+        print(f"Current usage: {current_usage:.3f} cores" if resource_type == 'cpu' else f"Current usage: {current_usage:.1f} MB")
         print("-"*90)
         print(f"{'Time':<20} {'Predicted':>15} {'Lower Bound':>15} {'Upper Bound':>15}")
         print("-"*90)
@@ -370,10 +393,11 @@ def display_detailed_forecast(forecasts, resource_type, summary_data, top_n=3):
         if resource_type == 'cpu':
             print(f"\nHistorical Avg CPU: {deployment_info['cpu_hist']:.3f} cores")
             print(f"Predicted Avg CPU:  {deployment_info['cpu_pred']:.3f} cores")
+            print(f"Current CPU:        {current_usage:.3f} cores")
         else:
             print(f"\nHistorical Avg Mem: {deployment_info['mem_hist']:.1f} MB")
             print(f"Predicted Avg Mem:  {deployment_info['mem_pred']:.1f} MB")
-
+            print(f"Current Memory:     {current_usage:.1f} MB")
 
 def main():
     print("="*110)
