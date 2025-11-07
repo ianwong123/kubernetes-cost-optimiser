@@ -28,9 +28,45 @@ NAMESPACE = "default"
 def get_current_resource_requests(namespace):
     """Fetch current CPU and memory requests"""
 
+    cpu_query = f'''
+        sum(kube_pod_container_resource_requests{{resource="cpu",namespace="{namespace}"}}) 
+    '''
+
+    mem_query = f'''
+        sum(kube_pod_container_resource_requests{{resource="memory",namespace="{namespace}"}}) 
+    '''
+
+    cpu_response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={'query': cpu_query})
+    cpu_data = cpu_response.json()
+
+    mem_response = requests.get(f"{PROMETHEUS_URL}/api/v1/query", params={'query': mem_query})
+    mem_data = mem_response.json()
+
+    if cpu_data['status'] == 'success' and cpu_data['data']['result']:
+        cpu_requests = float(cpu_data['data']['results'][0]['value'][1])
+
+    if mem_data['status'] == 'success' and mem_data['data']['result']:
+        mem_requests = float(mem_data['data']['results'][0]['value'][1]) / (1024 * 1024)  
+    
+    print(f"Current Requests - CPU: {cpu_requests:.3f} cores, Memory: {mem_requests:.1f} MB")
+
+    return {
+        'cpu_requests': cpu_requests,
+        'memory_requests': mem_requests
+    }
+
+
+# Get current number of VMs and hourly cost
 def get_vm_and_cost_info():
     """Fetch current number of VMs and hourly cost from cost-engine"""
 
+# Combine all data into a single structure for pushing to Redis
+def combine_data(forecast_summary, resource_requests, vm_and_cost, actual_usage):
+    """Combine all collected and forecasted data into a single structure"""
+
+# Push to Redis
+def push_to_redis(data):
+    """Push the collected and forecasted data to Redis"""
         
 # Get all deployment memory usage
 def get_deployment_memory_usage(namespace, hours=168):
