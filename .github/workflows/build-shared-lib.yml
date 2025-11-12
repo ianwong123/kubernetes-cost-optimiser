@@ -10,11 +10,12 @@ env:
   IMAGE_NAME: ${{ vars.DOCKER_USERNAME }}/shared-cost-lib
 
 jobs:
-  name: Build shared-cost-lib
+  build-shared-lib:
+    name: Build shared-cost-lib
     runs-on: ubuntu-latest
     permissions: 
-        contents: read
-        packages: write
+      contents: read
+      packages: write
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
