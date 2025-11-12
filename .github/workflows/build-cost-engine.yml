@@ -15,7 +15,7 @@ jobs:
     name: Build cost engine
     runs-on: ubuntu-latest
     permissions:
-      content: read
+      contents: read
       packages: write
     steps:
       - name: Checkout repository
