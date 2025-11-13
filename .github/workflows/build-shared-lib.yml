@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build Shared Image Library
 on:
   push:
     branches: [ main ]
