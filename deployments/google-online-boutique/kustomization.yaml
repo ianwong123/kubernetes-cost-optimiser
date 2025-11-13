@@ -1,0 +1,17 @@
+# Kustomize
+# Let ArgoCD see the google online boutique as one whole application
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: 
+  - base/adservice.yaml
+  - base/cartservice.yaml  
+  - base/checkoutservice.yaml
+  - base/currencyservice.yaml
+  - base/emailservice.yaml
+  - base/frontend.yaml
+  - base/loadgenerator.yaml
+  - base/paymentservice.yaml
+  - base/productcatalogservice.yaml
+  - base/recommendationservice.yaml
+  - base/redis-cart.yaml
+  - base/shippingservice.yaml
