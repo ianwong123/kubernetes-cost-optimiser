@@ -4,12 +4,12 @@ RUN pip install prometheus-client requests
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY cost-engine/requirements.txt .
 COPY shared-cost-lib/cost_calculator.py .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py .
+COPY cost-engine/main.py .
 
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
