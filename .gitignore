@@ -1,5 +1,9 @@
 /secrets
 /venv
 /autoscaler
+charts/
+*.tgz
+Chart.lock
 *pdf
 *png
+
