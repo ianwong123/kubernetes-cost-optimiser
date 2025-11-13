@@ -1,0 +1,9 @@
+global:
+  # hostname will default to this domain
+  domain: argocd.local.io
+server: 
+  ingress: 
+    enabled: true
+  extraArgs:
+    - --insecure
+
