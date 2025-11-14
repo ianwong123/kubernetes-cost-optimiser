@@ -4,6 +4,7 @@ metadata:
   name: cost-engine
   namespace: argocd
 spec:
+  project: default
   source:
     repoURL: https://github.com/ianwong123/kubernetes-cost-optimiser.git
     targetRevision: main
