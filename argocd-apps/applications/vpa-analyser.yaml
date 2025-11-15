@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metdata:
+  name: vpa-analyser
+  namespace: default
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ianwong123/kubernetes-cost-optimiser.git
+    targetRevision: main
+    path: /deployments/vpa-analayser
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
