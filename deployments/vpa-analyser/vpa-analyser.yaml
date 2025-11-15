@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vpa-analyser
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vpa-analyser
+rules:
+  - apiGroups: [""]
+    verbs: ["get", "list"]
+    resources: ["pods"]
+  - apiGroups: ["apps"]
+    verbs: ["get", "list"]
+    resources: ["deployments"]
+  - apiGroups: ["autoscaling.k8s.io"]
+    verbs: ["get", "list"]
+    resources: ["verticalpodautoscalers"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vpa-analyser
+roleRef:
+  apiGroup: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  name: vpa-analyser
+subjects:
+ - kind: ServiceAccount
+   name: vpa-analyser
+   namespace: monitoring
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vpa-analyser
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app: vpa-analyser
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: 
+      maxSurge: 25%
+      maxUnavailable: 0%
+  template:
+    metadata:
+      labels:
+        app: vpa-analyser
+    spec:
+      serviceAccountName: vpa-analyser
+      containers:
+      - name: vpa-analyser
+        image: wongian123/vpa-analyser:latest
+        ports:
+        - containerPort: 8001
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        readinessProbe:
+          initialDelaySeconds: 45
+          periodSeconds: 10
+          httpGet: 
+            path: /metrics
+            port: 8001
+        livenessProbe:
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          httpGet:
+            path: /metrics
+            port: 8001
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        allowPrivilegeEscalation: false
+        fsGroup: 2000    
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vpa-analyser
+  namespace: monitoring
+spec:
+  selector:
+    app: vpa-analyser
+  ports:
+  - port: 8001
+    targetPort: 8001
+    name: metrics
+  type: ClusterIP
