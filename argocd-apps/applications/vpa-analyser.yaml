@@ -1,8 +1,8 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
-metdata:
+metadata:
   name: vpa-analyser
-  namespace: default
+  namespace: argocd
 spec:
   project: default
   source:
