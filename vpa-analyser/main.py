@@ -3,16 +3,14 @@
 
 from prometheus_client import Gauge, start_http_server
 import time
-import json
-import subprocess
-import math
+import os
 from cost_calculator import CostCalculator
 from kubernetes import client, config
 
 vpa_estimated_vms_needed = Gauge('vpa_estimated_vms_needed', 'Number of VMs needed based on VPA recommendations')
 vpa_estimated_hourly_cost = Gauge('vpa_estimated_hourly_cost', 'Hourly cost based on VPA recommendations')
 vpa_total_cpu_cores = Gauge('vpa_total_cpu_cores', 'Total CPU cores recommended by VPA')
-vpa_total_memory_gb = Gauge('vpa_total_memory_gb', 'Total memory in GB recommende by VPA')
+vpa_total_memory_gb = Gauge('vpa_total_memory_gb', 'Total memory in GB recommended by VPA')
 
 # Configuration
 PROMETHEUS_URL = "http://prometheus-server:80"
@@ -50,7 +48,7 @@ def get_vpa_recommendations(namespace: str) -> dict:
         deployment_replicas = {}
         try:
             deployment_list = apps_v1.list_deployment_for_all_namespaces()
-            for deployment in deployment_list.items():
+            for deployment in deployment_list.items:
                 if deployment.metadata.namespace == namespace:
                     replicas = deployment.spec.replicas if deployment.spec.replicas else 1
                     deployment_replicas[deployment.metadata.name] = replicas
@@ -74,7 +72,7 @@ def get_vpa_recommendations(namespace: str) -> dict:
             replicas = deployment_replicas.get(deployment_name, 1)
 
             # Get VPA recommendation
-            recommendation = vpa.get('status', []).get('recommendation')
+            recommendation = vpa.get('status', {}).get('recommendation')
             if not recommendation:
                 continue
 
@@ -84,26 +82,26 @@ def get_vpa_recommendations(namespace: str) -> dict:
 
             # Use first container recommendation
             container_rec = container_recommendations[0]
-            target = container_rec.get('target', [])
+            target = container_rec.get('target', {})
 
             if not target:
                 continue
 
             # Extract CPU and memory from target
-            cpu_string = target.get("cpu," "0")
-            memory_string = target.get("memory," "0")
+            cpu_string = target.get('cpu', "0")
+            memory_string = target.get('memory', "0")
             
             cpu_cores = CostCalculator.convert_cpu_string_to_cores(cpu_string)
             memory_gb = CostCalculator.convert_memory_string_to_gb(memory_string)
 
             # Calculate total for deployment
             deployment_total_cpu = cpu_cores * replicas
-            deployment_total_memory = memory_mb * replicas
+            deployment_total_memory = memory_gb * replicas
                         
             total_cpu += deployment_total_cpu
             total_memory += deployment_total_memory
             
-            print(f"{vpa_name:<30} {replicas:<10} {cpu_cores*1000:<10.0f} {memory_mb:<10.2f}")
+            print(f"{vpa_name:<30} {replicas:<10} {cpu_cores*1000:<10.0f} {memory_gb:<10.2f}")
     
         return {
             'total_cpu_cores': total_cpu,
@@ -124,7 +122,7 @@ def calculate_and_expose_metrics(vpa_data: dict):
         vpa_total_memory_gb.set(0)
 
     total_cpu = vpa_data.get('total_cpu_cores', 0)
-    total_memory = vpa-data.get('total_memory_gb', 0)
+    total_memory = vpa_data.get('total_memory_gb', 0)
 
     vms_needed = CostCalculator.calculate_vms_needed(total_cpu, total_memory)
     hourly_cost = CostCalculator.calculate_cost_per_hour(vms_needed)
