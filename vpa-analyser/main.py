@@ -36,9 +36,9 @@ def get_vpa_recommendations(namespace: str) -> dict:
         # Command <kubectl api-resources --api-group=autoscaling.k8s.io>
         try:
             vpa_list = custom_objects.list_cluster_custom_object(
-                group = "autoscaling.k8s.io"
-                version = "v1"
-                plural = "verticalpodautoscalers"
+                group="autoscaling.k8s.io",
+                version="v1",
+                plural="verticalpodautoscalers"
             )
         except Exception as e:
             print(f"VPA not accessible or no VPA objects found: {e}")
