@@ -1,13 +1,12 @@
 FROM python:3.11-slim
 
-RUN pip install prometheus-client requests
-
 WORKDIR /app
 
 COPY cost-engine/requirements.txt .
-COPY shared-cost-lib/cost_calculator.py .
 
 RUN pip install --no-cache-dir -r requirements.txt
+
+COPY shared-cost-lib/cost_calculator.py .
 
 COPY cost-engine/main.py .
 
