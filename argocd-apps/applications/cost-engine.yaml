@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/ianwong123/kubernetes-cost-optimiser.git
     targetRevision: main
-    path: /deployments/cost-engine
+    path: deployments/cost-engine
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
