@@ -1,0 +1,24 @@
+redis:
+  architecture: standalone
+  auth:
+    enabled: true
+    existingSecret: redis-secret
+    existingSecretPasswordKey: password
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+      storageClass: ""
+
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 128Mi
+        memory: 100m
+  metrics:
+    enabled: true
+    serviceMonitor: 
+      enabled: true
+      namespace: monitoring

@@ -1,0 +1,11 @@
+# Create a wrapper chart to reference Redis upstream
+# Purpose is to override configs while keeping upstream chart intact
+# Keep things clean without downloading the whole chart to local repo...
+apiVersion: v2
+name: redis
+version: 1.0.0
+description: Redis deployment
+dependencies:
+  - name: redis
+    version: 23.2.12
+    repository: https://charts.bitnami.com/bitnami
