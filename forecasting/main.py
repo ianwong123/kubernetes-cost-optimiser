@@ -24,7 +24,7 @@ from prometheus_client import start_http_server, Gauge
 
 #  Configuration 
 # Run every 15 mins for testing
-PROMETHEUS_READ_URL = os.getenv("PROMETHEUS_URL", "http://prometheus.local.io")
+PROMETHEUS_READ_URL = "http://prometheus-server:80"
 NAMESPACES = ["default", "monitoring", "kube-system", "databases", "argocd"] 
 EXPORTER_PORT = 8002  
 UPDATE_INTERVAL = 900
