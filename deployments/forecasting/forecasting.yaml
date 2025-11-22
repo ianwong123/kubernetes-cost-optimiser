@@ -27,6 +27,9 @@ spec:
         image: wongian123/forecasting:latest
         ports:
         - containerPort: 8002
+        env: 
+        - name: MPLCONFIGDIR
+          value: "tmp"
         resources:
           requests:
             memory: "256Mi"
