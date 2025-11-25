@@ -51,6 +51,10 @@ spec:
     metadata:
       labels:
         app: vpa-analyser
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "metrics"
     spec:
       serviceAccountName: vpa-analyser
       containers:
