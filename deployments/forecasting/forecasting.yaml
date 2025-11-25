@@ -17,6 +17,10 @@ spec:
     metadata:
       labels:
         app: forecasting
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8002"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: forecasting
@@ -54,10 +58,6 @@ kind: Service
 metadata:
   name: forecasting
   namespace: monitoring
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "8002"
-    prometheus.io/path: "/metrics"
 spec:
   selector:
     app: forecasting
