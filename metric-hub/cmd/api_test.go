@@ -15,7 +15,7 @@ func TestCostEngineSuccess(t *testing.T) {
   "namespace": "default",
   "cluster_totals": {
     "vm_count": 3,
-    "current_hourly_cost_gbp": 1.25
+    "current_hourly_cost": 1.25
   },
   "deployments": [
     {

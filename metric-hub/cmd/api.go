@@ -8,11 +8,15 @@ import (
 	"github.com/ianwong123/kubernetes-cost-optimiser/metric-hub/internal"
 )
 
-type APIServer struct{}
+type APIServer struct {
+	Validator internal.ValidatorInterface
+}
 
 // cosntructor
 func NewAPIServer() *APIServer {
-	return &APIServer{}
+	return &APIServer{
+		Validator: internal.NewValidator(),
+	}
 }
 
 // start http server
@@ -33,6 +37,12 @@ func (s *APIServer) handleCostEngine(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
+
+	if err := s.Validator.ValidateCostPayload(&payload); err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
 	fmt.Println("Received post request for /metrics/cost")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Cost payload accepted"))
@@ -47,6 +57,12 @@ func (s *APIServer) handleForecast(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
+
+	if err := s.Validator.ValidateForecastPayload(&payload); err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
 	fmt.Println("Received post request for /metrics/forecast")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Forecast payload accepted"))
