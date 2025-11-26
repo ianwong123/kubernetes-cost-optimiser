@@ -1,0 +1,182 @@
+API Gateway Aggregator
+Api to handle json metrics:
+1. POST /metrics/cost
+2. POST /metrics/forecast
+
+Create the http server to handle requests to endpoints:
+1. POST /metrics/cost  FROM port 8000
+2. POST /metrics/forecast FROM port 8002
+
+Typical payload in POST /metrics/cost request includes:
+Note*: The current_hourly_cost_gbp is driven by the namespace that inccurs the highest cost
+{
+  "source": "cost-engine",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "namespace": "default",
+  "cluster_totals": {
+    "vm_count": 3,
+    "current_hourly_cost_gbp": 1.25
+  },
+  "deployments": [
+    {
+      "name": "adservice",
+      "current_requests": {
+        "cpu_cores": 2.0,
+        "memory_mb": 4096
+      },
+      "current_usage": {
+        "cpu_cores": 0.4,
+        "memory_mb": 512
+      }
+    },
+    {
+      "name": "cartservice",
+      "current_requests": {
+        "cpu_cores": 1.5,
+        "memory_mb": 2048
+      },
+      "current_usage": {
+        "cpu_cores": 0.8,
+        "memory_mb": 1024
+      }
+    }
+  ]
+}
+
+Header should include the authorisation bearer token, 
+as API can only accept requests from cost-engine
+
+Typical payload in POST /metrics/forecast request includes:
+{
+  "source": "forecast",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "namespace": "default",
+  "deployments": [
+    {
+      "name": "adservice",
+      "predict_peak_24h": {
+        "cpu_cores": 0.55,
+        "memory_mb": 600
+      }
+    },
+    {
+      "name": "cartservice",
+      "predict_peak_24h": {
+        "cpu_cores": 1.2,
+        "memory_mb": 1200
+      }
+    }
+  ]
+}
+
+Header should include the authorisation bearer token, 
+as API can only accept requests from forecasting
+```
+Workflow POST /metrics/cost:
+start
+router receives endpoint
+router passes endpoint to handler
+handler processes the request
+payload is sent to validator
+validator checks payload (struct validator)
+ - vm_count > 0 
+ - namespace == default 
+ - deployments not empty
+validator passes payload to aggregator
+aggregator:
+    1. iterate through all deployments
+    2. redis hset for each app, 
+        - req_cpu
+        - req_mem
+        - usage_cpu_curr
+        - usage_mem_curr
+    3. redis SET cluster:default:cost
+    4. redis SET cluster:default:vm_count
+check thresholds for each deployment 
+    1. waste = (req - usage) / req
+    2. utilisation = usage / req
+if waste > 0.5 or utilisation > 0.85
+    1. check cooldown timestamp (last trigger timestamp)
+    2. if cooldown expired (> 30 min)
+        - trigger ai agent with deployment data
+        - update last trigger timestamp 
+response 201 ok
+stop
+
+Workflow post /mertrics/forecast
+start
+Router receives an endpoint
+Router passes endpoint to handler
+handler processes the request
+payload is sent to validator
+validator checks payload (struct validator)
+ - namespace == default 
+ - deployments not empty
+ - predict_peak_24h exist for each deployment 
+validator passes payload to aggreator
+aggregator:
+    1. iterate through deployments
+    2. redis HSET for each app:
+        - pred_cpu_peak
+        - pred_mem_peak
+        - forecast_timestamp
+read full state from Redis (cost + forecast combined)
+check thresholds for each deployment:
+    - pred_cpu_peak > req_cpu * 0.9 (predicted capacity risk)
+    - waste > 0.4 AND pred_cpu_peak < req_cpu * 0.6 (safe to downscale)
+if any threshold crossed:
+    - check cooldown (last_trigger timestamp)
+    - if cooldown expired (>30min):
+        trigger AI agent with combined state
+        update last_trigger timestamp
+response 201 ok
+stop
+
+We apply state management in redis to remember our latest data/payload 
+so that we can merge forecast with cost which will arrives in different timestamp
+The state is stored in Redis
+
+Redis State Schema
+Key: app:default:adservice
+Fields:
+  req_cpu              2.0       (Cost)
+  req_mem              4096      (Cost)
+  usage_cpu_curr       0.4       (Cost)
+  usage_mem_curr       512       (Cost)
+  pred_cpu_peak        0.55      (Forecast)
+  pred_mem_peak        600       (Forecast)
+  cost_timestamp       170000    (Cost)
+  forecast_timestamp   170001    (Forecast)
+  last_trigger         170002    (Aggregator)
+
+Key: cluster:default:cost
+Value: 1.25
+
+Key: cluster:default:vm_count
+Value: 3
+
+Key: trigger:default:adservice
+Value: 1700000000  (timestamp of last AI agent trigger)
+
+Threshold Logic
+In Cost Handler
+```
+waste = (req_cpu - usage_cpu_curr) / req_cpu
+utilization = usage_cpu_curr / req_cpu
+
+Trigger if:
+  - waste > 0.5 (wasting >50%)
+  - utilization > 0.85 (risk >85%)
+```
+
+In Forecast Handler
+```
+Read state from Redis to get req_cpu, usage_cpu_curr, pred_cpu_peak
+
+Trigger if:
+  - pred_cpu_peak > req_cpu * 0.9 (predicted spike)
+  - waste > 0.4 AND pred_cpu_peak < req_cpu * 0.6 (safe downscale)
+```
+
+As of the moment, the namespace with the highest cost drives the current hourly cost
+so payload in 
