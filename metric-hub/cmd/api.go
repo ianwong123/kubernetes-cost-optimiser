@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/ianwong123/kubernetes-cost-optimiser/metric-hub/internal"
 )
 
 type APIServer struct{}
@@ -18,17 +21,34 @@ func (s *APIServer) Start() error {
 	mux.HandleFunc("POST /metrics/cost", s.handleCostEngine)
 	mux.HandleFunc("POST /metrics/forecast", s.handleForecast)
 
-	return http.ListenAndServe(":8080", mux)
+	return http.ListenAndServe(":8008", mux)
 }
 
 // handler function for POST /metrics/cost request
 func (s *APIServer) handleCostEngine(w http.ResponseWriter, r *http.Request) {
+	var payload internal.CostPayload
+
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&payload); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
 	fmt.Println("Received post request for /metrics/cost")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Cost payload accepted"))
 
 }
 
 // handler function for POST /metrics/forecast
 func (s *APIServer) handleForecast(w http.ResponseWriter, r *http.Request) {
+	var payload internal.ForecastPayload
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&payload); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
 	fmt.Println("Received post request for /metrics/forecast")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Forecast payload accepted"))
 
 }
