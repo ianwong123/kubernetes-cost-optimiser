@@ -7,6 +7,7 @@ toolchain go1.24.10
 require (
 	github.com/go-playground/validator/v10 v10.28.0
 	github.com/golang/glog v1.2.5
+	github.com/redis/go-redis/v9 v9.17.1
 	k8s.io/api v0.34.2
 	k8s.io/apimachinery v0.34.2
 	k8s.io/autoscaler v0.0.0-20251121193834-7b95cb06cb08
@@ -14,7 +15,9 @@ require (
 )
 
 require (
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.10 // indirect
