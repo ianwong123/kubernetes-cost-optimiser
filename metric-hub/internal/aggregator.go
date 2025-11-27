@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -29,6 +28,8 @@ func NewAggregator(redisAddr string, redisPass string) *Aggregator {
 	}
 }
 
+const LatestCostKey = "cost:latest"
+
 // Marshal payload and save to redis
 // Key - cost:latest:<time>
 // Value - <payload>
@@ -38,9 +39,7 @@ func (a *Aggregator) SaveCostPayload(p *CostPayload) error {
 		return err
 	}
 
-	key := "cost:latest:" + strconv.FormatInt(p.Timestamp.Unix(), 10)
-
-	err = a.Client.Set(context.Background(), key, jsonData, 0).Err()
+	err = a.Client.Set(context.Background(), LatestCostKey, jsonData, 0).Err()
 	if err != nil {
 		return err
 	}
