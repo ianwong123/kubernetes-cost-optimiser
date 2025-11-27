@@ -4,26 +4,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/ianwong123/kubernetes-cost-optimiser/metric-hub/internal"
 )
 
 type APIServer struct {
-	Validator internal.ValidatorInterface
+	Validator  internal.ValidatorInterface
+	Aggregator internal.AggregatorInterface
 }
 
 // cosntructor
 func NewAPIServer() *APIServer {
+	redisAddr := os.Getenv("REDIS_SERVICE_ADDR")
+	redisPass := os.Getenv("REDIS_SERVICE_PASS")
 	return &APIServer{
-		Validator: internal.NewValidator(),
+		Validator:  internal.NewValidator(),
+		Aggregator: internal.NewAggregator(redisAddr, redisPass),
 	}
 }
 
 // start http server
 func (s *APIServer) Start() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /metrics/cost", s.handleCostEngine)
-	mux.HandleFunc("POST /metrics/forecast", s.handleForecast)
+	mux.HandleFunc("POST api/v1/metrics/cost", s.handleCostEngine)
+	mux.HandleFunc("POST api/v1/metrics/forecast", s.handleForecast)
 
 	return http.ListenAndServe(":8008", mux)
 }
@@ -38,12 +43,17 @@ func (s *APIServer) handleCostEngine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.Validator.ValidateCostPayload(&payload); err != nil {
+	if err := s.Validator.Validate(&payload); err != nil {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Println("Received post request for /metrics/cost")
+	if err := s.Aggregator.SaveCostPayload(&payload); err != nil {
+		http.Error(w, "Failed to save", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Println("Received post request for api/v1/metrics/cost")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Cost payload accepted"))
 
@@ -58,12 +68,12 @@ func (s *APIServer) handleForecast(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.Validator.ValidateForecastPayload(&payload); err != nil {
+	if err := s.Validator.Validate(&payload); err != nil {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Println("Received post request for /metrics/forecast")
+	fmt.Println("Received post request for api/v1/metrics/forecast")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Forecast payload accepted"))
 

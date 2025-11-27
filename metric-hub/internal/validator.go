@@ -3,8 +3,7 @@ package internal
 import "github.com/go-playground/validator/v10"
 
 type ValidatorInterface interface {
-	ValidateCostPayload(p *CostPayload) error
-	ValidateForecastPayload(p *ForecastPayload) error
+	Validate(v interface{}) error
 }
 
 type Validator struct {
@@ -12,18 +11,12 @@ type Validator struct {
 }
 
 // instantiate validator
-func NewValidator() *Validator {
+func NewValidator() ValidatorInterface {
 	return &Validator{
 		validate: validator.New(),
 	}
 }
 
-// validate against struct
-func (v *Validator) ValidateCostPayload(p *CostPayload) error {
-	return v.validate.Struct(p)
-}
-
-// validate against struct
-func (v *Validator) ValidateForecastPayload(p *ForecastPayload) error {
-	return v.validate.Struct(p)
+func (v *Validator) Validate(payload interface{}) error {
+	return v.validate.Struct(payload)
 }
