@@ -14,13 +14,14 @@ func TestCostEngineSuccess(t *testing.T) {
   "source": "cost-engine",
   "timestamp": "2024-01-01T12:00:00Z",
   "namespace": "default",
-  "cluster_totals": {
+  "cluster_info": {
     "vm_count": 3,
     "current_hourly_cost": 1.25
   },
   "deployments": [
     {
-]      "current_requests": {
+      "name": "adservice",
+      "current_requests": {
         "cpu_cores": 1.0,
         "memory_mb": 4096
       },
@@ -46,7 +47,7 @@ func TestCostEngineSuccess(t *testing.T) {
 	server := NewAPIServer()
 
 	// simulate post request
-	req, err := http.NewRequest(http.MethodPost, "/metrics/cost", bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/metrics/cost", bytes.NewBuffer(jsonStr))
 	if err != nil {
 		t.Fatal(err)
 	}
