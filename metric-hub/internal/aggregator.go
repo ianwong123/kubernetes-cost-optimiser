@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ianwong123/kubernetes-cost-optimiser/metric-hub/internal/queue"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -16,7 +17,13 @@ type AggregatorInterface interface {
 
 type Aggregator struct {
 	Client *redis.Client
+	Queue  queue.QueueClient
 }
+
+const (
+	LatestCostKey = "cost:latest"
+	AgentQueueKey = "queue:agent:jobs"
+)
 
 func NewAggregator(redisAddr string, redisPass string) *Aggregator {
 	rdb := redis.NewClient(&redis.Options{
@@ -25,12 +32,13 @@ func NewAggregator(redisAddr string, redisPass string) *Aggregator {
 		DB:       0,
 	})
 
+	queueTool := queue.NewRedisQueue(rdb)
+
 	return &Aggregator{
 		Client: rdb,
+		Queue:  queueTool,
 	}
 }
-
-const LatestCostKey = "cost:latest"
 
 // Marshal payload and save to redis
 // Key - cost:latest
@@ -60,6 +68,9 @@ func (a *Aggregator) SaveCostPayload(p *CostPayload) error {
 func (a *Aggregator) CheckCostThreshold(ctx context.Context, p *CostPayload) {
 	fmt.Printf("[Background] Starting threshold check for %d deployments", len(p.Deployments))
 
+	ns := p.Namespace
+	clusterInfo := p.ClusterInfo
+
 	for _, deployment := range p.Deployments {
 		select {
 		case <-ctx.Done():
@@ -70,7 +81,6 @@ func (a *Aggregator) CheckCostThreshold(ctx context.Context, p *CostPayload) {
 
 		reqCpu := deployment.CurrentRequests.CPUCores
 		useCpu := deployment.CurrentUsage.CPUCores
-
 		reqMem := deployment.CurrentRequests.MemoryMB
 		useMem := deployment.CurrentUsage.MemoryMB
 
@@ -78,24 +88,28 @@ func (a *Aggregator) CheckCostThreshold(ctx context.Context, p *CostPayload) {
 			continue
 		}
 
-		wasteCpu := (reqCpu - useCpu) / reqCpu
-		utilCpu := useCpu / reqCpu
+		var wasteCpu, utilCpu, wasteMem, utilMem float64
 
-		wasteMem := (reqMem - useMem) / reqMem
-		utilMem := useMem / reqMem
-
-		// evaluate cpu logic
-		if wasteCpu > 0.5 {
-			a.handleTrigger(ctx, deployment, "High CPU Waste")
-		} else if utilCpu > 0.85 {
-			a.handleTrigger(ctx, deployment, "High CPU Risk")
+		if reqCpu > 0 {
+			wasteCpu = (reqCpu - useCpu) / reqCpu
+			utilCpu = useCpu / reqCpu
 		}
 
-		// evaluate memory logic
+		if reqMem > 0 {
+			wasteMem = (reqMem - useMem) / reqMem
+			utilMem = useMem / reqMem
+		}
+
+		// Prioritise memory
+		// one reason is sufficient for triggering agent
 		if wasteMem > 0.5 {
-			a.handleTrigger(ctx, deployment, "High Memory Waste")
+			a.handleTrigger(ctx, deployment, "High Memory Waste", ns, clusterInfo)
 		} else if utilMem > 0.85 {
-			a.handleTrigger(ctx, deployment, "High Memory Risk")
+			a.handleTrigger(ctx, deployment, "High Memory Risk", ns, clusterInfo)
+		} else if wasteCpu > 0.5 {
+			a.handleTrigger(ctx, deployment, "High CPU Waste", ns, clusterInfo)
+		} else if utilCpu > 0.85 {
+			a.handleTrigger(ctx, deployment, "High CPU Risk", ns, clusterInfo)
 		}
 	}
 
@@ -104,7 +118,7 @@ func (a *Aggregator) CheckCostThreshold(ctx context.Context, p *CostPayload) {
 // Handle trigger cooldown
 // Key: trigger:cooldown:<deployment name>
 // Value: timestamp
-func (a *Aggregator) handleTrigger(ctx context.Context, c CostDeployment, reason string) {
+func (a *Aggregator) handleTrigger(ctx context.Context, c CostDeployment, reason string, ns string, info ClusterInfo) {
 	// define key
 	key := fmt.Sprintf("trigger:cooldown:%s", c.Name)
 
@@ -114,7 +128,7 @@ func (a *Aggregator) handleTrigger(ctx context.Context, c CostDeployment, reason
 
 	// handle case if first time triggering
 	if err == redis.Nil {
-		a.executePush(ctx, key, c, reason)
+		a.executePush(ctx, key, c, reason, ns, info)
 		return
 	} else if err != nil {
 		fmt.Printf("Redis error %v\n", err)
@@ -137,16 +151,26 @@ func (a *Aggregator) handleTrigger(ctx context.Context, c CostDeployment, reason
 	}
 
 	// Proceed to push if cooldown expired
-	a.executePush(ctx, key, c, reason)
+	a.executePush(ctx, key, c, reason, ns, info)
 }
 
 // push to queue and update timestamp
-func (a *Aggregator) executePush(ctx context.Context, key string, c CostDeployment, reason string) {
+func (a *Aggregator) executePush(ctx context.Context, cooldownKey string, c CostDeployment, reason string, ns string, info ClusterInfo) {
 	fmt.Printf("Pushing to queue for %s because: %s\n", c.Name, reason)
 
 	// Push to queue
-	// to be implemented
+	job := AgentJob{
+		Reason:      reason,
+		Namespace:   ns,
+		Deployment:  c,
+		ClusterInfo: info,
+	}
 
+	err := a.Queue.PublishJob(ctx, AgentQueueKey, job)
+	if err != nil {
+		fmt.Printf("Failed to push job: %v\n", err)
+		return
+	}
 	// Update time
-	a.Client.Set(ctx, key, time.Now().Unix(), 0)
+	a.Client.Set(ctx, cooldownKey, time.Now().Unix(), 0)
 }
