@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestCostEngineSuccess(t *testing.T) {
@@ -19,9 +20,8 @@ func TestCostEngineSuccess(t *testing.T) {
   },
   "deployments": [
     {
-      "name": "adservice",
-      "current_requests": {
-        "cpu_cores": 2.0,
+]      "current_requests": {
+        "cpu_cores": 1.0,
         "memory_mb": 4096
       },
       "current_usage": {
@@ -69,6 +69,9 @@ func TestCostEngineSuccess(t *testing.T) {
 	if rr.Body.String() != expected {
 		t.Errorf("Handler returned unexpected body: got %q, want %q", rr.Body.String(), expected)
 	}
+
+	// temporary sleep to print goroutine logs
+	time.Sleep(1 * time.Second)
 }
 
 func TestForecastSuccess(t *testing.T) {
