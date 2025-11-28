@@ -18,22 +18,27 @@ type ForecastDeployment struct {
 	PredictPeak24h Resources `json:"predict_peak_24h" validate:"required"`
 }
 
-type ClusterTotals struct {
+type ClusterInfo struct {
 	VmCount float64 `json:"vm_count" validate:"required,gt=0"`
 	Cost    float64 `json:"current_hourly_cost" validate:"required,gt=0"`
 }
 
 type CostPayload struct {
-	Source        string           `json:"source" validate:"required"`
-	Timestamp     time.Time        `json:"timestamp" validate:"required"`
-	Namespace     string           `json:"namespace" validate:"required,eq=default"`
-	ClusterTotals ClusterTotals    `json:"cluster_totals" validate:"required"`
-	Deployments   []CostDeployment `json:"deployments" validate:"required,min=1,dive"`
+	Timestamp   time.Time        `json:"timestamp" validate:"required"`
+	Namespace   string           `json:"namespace" validate:"required,eq=default"`
+	ClusterInfo ClusterInfo      `json:"cluster_info" validate:"required"`
+	Deployments []CostDeployment `json:"deployments" validate:"required,min=1,dive"`
 }
 
 type ForecastPayload struct {
-	Source      string               `json:"source" validate:"required"`
 	Timestamp   time.Time            `json:"timestamp" validate:"required"`
 	Namespace   string               `json:"namespace" validate:"required,eq=default"`
 	Deployments []ForecastDeployment `json:"deployments" validate:"required,min=1,dive"`
+}
+
+type AgentJob struct {
+	Reason      string         `json:"reason" validate:"required"`
+	Namespace   string         `json:"namespace" validate:"required,eq=default"`
+	Deployment  CostDeployment `json:"deployments"`
+	ClusterInfo ClusterInfo    `json:"cluster_info"`
 }
