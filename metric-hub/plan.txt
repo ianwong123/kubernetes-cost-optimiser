@@ -18,9 +18,9 @@ Typical payload in POST /metrics/cost request includes:
   "source": "cost-engine",
   "timestamp": "2024-01-01T12:00:00Z",
   "namespace": "default",
-  "cluster_totals": {
+  "cluster_info": {
     "vm_count": 3,
-    "current_hourly_cost_gbp": 1.25
+    "current_hourly_cost": 1.25
   },
   "deployments": [
     {
@@ -51,7 +51,6 @@ Typical payload in POST /metrics/cost request includes:
 Typical payload in POST /metrics/forecast request includes:
 ====================================================================
 {
-  "source": "forecast",
   "timestamp": "2024-01-01T12:00:00Z",
   "namespace": "default",
   "deployments": [
@@ -90,16 +89,15 @@ every minute when a cost payload arrives:
 What gets pushed to queue for each deployment in from costpayload:
 {
   "reason": "high-waste",
-  "source": "cost-engine",
   "namespace": "default",
-  "deployment": {
+  "deployments": {
     "name": "adservice",
     "current_requests": { cpu_cores: ... , memory_mb: ... },
     "current_usage": { cpu_cores: ..., memory_mb: ... }
   },
   "cluster_info": {
     "vm_count": 3,
-    "current_hourly_cost_gbp": 1.25
+    "current_hourly_cost": 1.25
   }
 }
 Threshold logic:
@@ -130,7 +128,6 @@ when a forecast payload arrives:
 What gets pushed to queue for each deployment in from after merging cost and forecast:
 {
   "reason": "high-waste",
-  "source": "aggregator",
   "namespace": "default",
   "deployment": {
     "name": "adservice",

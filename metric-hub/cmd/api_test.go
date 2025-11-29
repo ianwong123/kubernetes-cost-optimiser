@@ -9,7 +9,7 @@ import (
 )
 
 func TestCostEngineSuccess(t *testing.T) {
-	// Create json byte
+	// 1. Create Cost Payload to set baseline
 	var jsonStr = []byte(`{
   "source": "cost-engine",
   "timestamp": "2024-01-01T12:00:00Z",
@@ -43,22 +43,16 @@ func TestCostEngineSuccess(t *testing.T) {
     }
   ]
 }`)
-	// instantiate server
+
 	server := NewAPIServer()
 
-	// simulate post request
 	req, err := http.NewRequest(http.MethodPost, "/api/v1/metrics/cost", bytes.NewBuffer(jsonStr))
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// set header so handler knows to expect json
 	req.Header.Set("Content-Type", "application/json")
 
-	// simulate response writer
 	rr := httptest.NewRecorder()
-
-	// call handler
 	server.handleCostEngine(rr, req)
 
 	if status := rr.Code; status != http.StatusCreated {
@@ -71,47 +65,43 @@ func TestCostEngineSuccess(t *testing.T) {
 		t.Errorf("Handler returned unexpected body: got %q, want %q", rr.Body.String(), expected)
 	}
 
-	// temporary sleep to print goroutine logs
+	// Sleep to allow background threshold check to run and print logs
 	time.Sleep(1 * time.Second)
 }
 
 func TestForecastSuccess(t *testing.T) {
+	// 2. Create Forecast Payload (Relies on Cost Data existing in Redis)
+	// adservice: Prediction 3.0 vs Request 1.0 (from Cost above) -> Should Trigger Risk
 	var jsonStr = []byte(`{
-  "source": "forecast",
   "timestamp": "2024-01-01T12:00:00Z",
   "namespace": "default",
   "deployments": [
     {
       "name": "adservice",
-      "predict_peak_24h": {
-        "cpu_cores": 0.55,
+      "predicted_peak_24h": {
+        "cpu_cores": 3.0,
         "memory_mb": 600
       }
     },
     {
       "name": "cartservice",
-      "predict_peak_24h": {
+      "predicted_peak_24h": {
         "cpu_cores": 1.2,
         "memory_mb": 1200
       }
     }
   ]
-}
-`)
+}`)
 
-	// instantiate server
 	server := NewAPIServer()
 
-	// simulate request
-	req, err := http.NewRequest(http.MethodPost, "/metrics/forecast", bytes.NewBuffer(jsonStr))
+	req, err := http.NewRequest(http.MethodPost, "/api/v1/metrics/forecast", bytes.NewBuffer(jsonStr))
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
-
 	server.handleForecast(rr, req)
 
 	if status := rr.Code; status != http.StatusCreated {
@@ -123,4 +113,7 @@ func TestForecastSuccess(t *testing.T) {
 	if rr.Body.String() != expected {
 		t.Errorf("Handler returned unexpected body: got %q, want %q", rr.Body.String(), expected)
 	}
+
+	// Sleep to allow background merge and check to run
+	time.Sleep(1 * time.Second)
 }

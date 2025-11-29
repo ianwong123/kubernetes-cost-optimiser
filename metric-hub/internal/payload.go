@@ -8,14 +8,15 @@ type Resources struct {
 }
 
 type CostDeployment struct {
-	Name            string    `json:"name" validate:"required"`
-	CurrentRequests Resources `json:"current_requests" validate:"required"`
-	CurrentUsage    Resources `json:"current_usage" validate:"required"`
+	Name            string     `json:"name" validate:"required"`
+	CurrentRequests Resources  `json:"current_requests" validate:"required"`
+	CurrentUsage    Resources  `json:"current_usage" validate:"required"`
+	PredictPeak24h  *Resources `json:"predicted_peak_24h,omitempty"`
 }
 
 type ForecastDeployment struct {
 	Name           string    `json:"name" validate:"required"`
-	PredictPeak24h Resources `json:"predict_peak_24h" validate:"required"`
+	PredictPeak24h Resources `json:"predicted_peak_24h" validate:"required"`
 }
 
 type ClusterInfo struct {

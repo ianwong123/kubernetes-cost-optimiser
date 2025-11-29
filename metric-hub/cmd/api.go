@@ -27,8 +27,8 @@ func NewAPIServer() *APIServer {
 // start http server
 func (s *APIServer) Start() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST api/v1/metrics/cost", s.handleCostEngine)
-	mux.HandleFunc("POST api/v1/metrics/forecast", s.handleForecast)
+	mux.HandleFunc("POST /api/v1/metrics/cost", s.handleCostEngine)
+	mux.HandleFunc("POST /api/v1/metrics/forecast", s.handleForecast)
 
 	return http.ListenAndServe(":8008", mux)
 }
@@ -71,6 +71,11 @@ func (s *APIServer) handleForecast(w http.ResponseWriter, r *http.Request) {
 	if err := s.Validator.Validate(&payload); err != nil {
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
+	}
+
+	if err := s.Aggregator.FetchPayload(&payload); err != nil {
+		fmt.Printf("Aggregator error %v\n", err)
+		http.Error(w, "Failed to process forecast", http.StatusBadRequest)
 	}
 
 	fmt.Println("Received post request for api/v1/metrics/forecast")

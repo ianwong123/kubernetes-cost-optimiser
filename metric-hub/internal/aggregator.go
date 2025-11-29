@@ -13,6 +13,7 @@ import (
 
 type AggregatorInterface interface {
 	SaveCostPayload(p *CostPayload) error
+	FetchPayload(p *ForecastPayload) error
 }
 
 type Aggregator struct {
@@ -112,7 +113,6 @@ func (a *Aggregator) CheckCostThreshold(ctx context.Context, p *CostPayload) {
 			a.handleTrigger(ctx, deployment, "High CPU Risk", ns, clusterInfo)
 		}
 	}
-
 }
 
 // Handle trigger cooldown
@@ -173,4 +173,118 @@ func (a *Aggregator) executePush(ctx context.Context, cooldownKey string, c Cost
 	}
 	// Update time
 	a.Client.Set(ctx, cooldownKey, time.Now().Unix(), 0)
+}
+
+// prepare cost key for merging
+func (a *Aggregator) FetchPayload(p *ForecastPayload) error {
+	bg := context.Background()
+
+	latestCostJSON, err := a.Client.Get(bg, LatestCostKey).Result()
+
+	if err == redis.Nil {
+		return fmt.Errorf("cannot process forecast: latest cost data (%s) not found in cache", LatestCostKey)
+	} else if err != nil {
+		return fmt.Errorf("failed to get redis cost data %w", err)
+
+	}
+
+	ctx, cancel := context.WithTimeout(bg, 10*time.Second)
+
+	go func() {
+		defer cancel()
+		a.CheckForecastThreshold(ctx, p, latestCostJSON)
+	}()
+	return nil
+
+}
+
+// check forecast
+func (a *Aggregator) CheckForecastThreshold(ctx context.Context, p *ForecastPayload, latestCostJSON string) {
+	var costPayload CostPayload
+	// unmarshal cost key value back to struct
+	if err := json.Unmarshal([]byte(latestCostJSON), &costPayload); err != nil {
+		fmt.Printf("failed to unmarshal cost json in background %v", err)
+		return
+	}
+
+	// convert the cost list into map where key = name
+	costMap := make(map[string]CostDeployment)
+	for _, costDep := range costPayload.Deployments {
+		costMap[costDep.Name] = costDep
+	}
+
+	fmt.Printf("Starting forecast merge for %d deployments\n", len(p.Deployments))
+
+	// Merge forecast fields to the correct deployment
+	for _, forecastDep := range p.Deployments {
+		select {
+		case <-ctx.Done():
+			fmt.Printf("Forecast check cancelled")
+			return
+		default:
+		}
+
+		if costDep, exists := costMap[forecastDep.Name]; exists {
+			a.evaluateForecastLogic(ctx, forecastDep, costDep, costPayload.Namespace, costPayload.ClusterInfo)
+		} else {
+			fmt.Printf("No cost data found for forecast deployment %v", forecastDep.Name)
+		}
+	}
+}
+
+func (a *Aggregator) evaluateForecastLogic(ctx context.Context, f ForecastDeployment, c CostDeployment, ns string, info ClusterInfo) {
+	reqCpu := c.CurrentRequests.CPUCores
+	usageCpu := c.CurrentUsage.CPUCores
+	predCpu := f.PredictPeak24h.CPUCores
+
+	reqMem := c.CurrentRequests.MemoryMB
+	usageMem := c.CurrentRequests.MemoryMB
+	predMem := f.PredictPeak24h.MemoryMB
+
+	// cpu logic
+	if reqCpu > 0 {
+		capacityRiskCpu := predCpu > (reqCpu * 0.9)
+		currentWasteCpu := (reqCpu - usageCpu) / reqCpu
+		safeDownscaleCpu := currentWasteCpu > 0.4 && predCpu < (reqCpu*0.6)
+
+		if capacityRiskCpu {
+			a.executeForecastPush(ctx, c, "Predicted Capacity Risk (CPU)", ns, info, f.PredictPeak24h)
+			return
+		} else if safeDownscaleCpu {
+			a.executeForecastPush(ctx, c, "Predicted Safe Downscale (CPU)", ns, info, f.PredictPeak24h)
+			return
+		}
+	}
+
+	// 2. Memory Logic (If CPU didn't trigger)
+	if reqMem > 0 {
+		capacityRiskMem := predMem > (reqMem * 0.9)
+		currentWasteMem := (reqMem - usageMem) / reqMem
+		safeDownscaleMem := currentWasteMem > 0.4 && predMem < (reqMem*0.6)
+
+		if capacityRiskMem {
+			a.executeForecastPush(ctx, c, "Predicted Capacity Risk (Memory)", ns, info, f.PredictPeak24h)
+			return
+		} else if safeDownscaleMem {
+			a.executeForecastPush(ctx, c, "Predicted Safe Downscale (Memory)", ns, info, f.PredictPeak24h)
+			return
+		}
+	}
+}
+
+func (a *Aggregator) executeForecastPush(ctx context.Context, c CostDeployment, reason string, ns string, info ClusterInfo, prediction Resources) {
+	fmt.Printf("Pushing forecast job for %s\n", c.Name)
+
+	c.PredictPeak24h = &prediction
+
+	job := AgentJob{
+		Reason:      reason,
+		Namespace:   ns,
+		Deployment:  c,
+		ClusterInfo: info,
+	}
+	err := a.Queue.PublishJob(ctx, AgentQueueKey, job)
+	if err != nil {
+		fmt.Printf("Failed to push forecast job: %v\n", err)
+	}
 }
