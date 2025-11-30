@@ -22,21 +22,6 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 6379
-        
-        # LOAD PASSWORD INTO ENV
-        env:
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              # match SealedSecret metadata.name
-              name: redis-secret  
-              # matche SealedSecret spec.encryptedData key
-              key: password       
-        
-        # USE ENV IN STARTUP COMMAND
-        # tell Redis to require a password
-        args: ["--requirepass", "$(REDIS_PASSWORD)"]
-        
         resources:
           requests:
             cpu: 100m
