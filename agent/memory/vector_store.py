@@ -2,7 +2,7 @@ import numpy as np
 from typing import List
 from redis import Redis
 from redis.commands.search.field import VectorField, TextField
-from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+from redis.commands.search.index_definition import IndexDefinition, IndexType
 from redis.commands.search.query import Query
 from sentence_transformers import SentenceTransformer
 
@@ -15,13 +15,13 @@ class RedisVectorStore:
     def __init__(self, redis_client: Redis):
         self.client = redis_client
         self.model = SentenceTransformer('all-MiniLM-L6-v2') 
-        self._create_index()
+        self._check_index_exists()
 
     # create vector search index
-    def _create_index(self):
+    def _check_index_exists(self):
         """Create vector search index if it doesnt exist"""
         try:
-            self.client.ft(INDEX_NAME).info
+            self.client.ft(INDEX_NAME).info()
             print("Index already exist")
         except:
             print("No index found, creating new index...")
@@ -51,7 +51,7 @@ class RedisVectorStore:
         vector = self.embed_text(text)
 
         self.client.hset(doc_id, mapping={
-            "content:": f"Scenario: {text} | Outcome: {outcome}",
+            "content": f"Scenario: {text} | Outcome: {outcome}",
             "vector": vector
         })
 
@@ -62,12 +62,12 @@ class RedisVectorStore:
 
         # use RediSearch 2.0 query syntax
         query = (
-            Query(f"*=>[KNN {k} @vector $vec AS SCORE]")
-            .sort_by("score")
+            Query(f"*=>[KNN {k} @vector $vec AS vector_score]")
+            .sort_by("vector_score")
             .return_fields("content")
             .dialect(2)
         )
 
-        results = self.client.ft(INDEX_NAME).search(query, params_dict=params)
+        results = self.client.ft(INDEX_NAME).search(query, query_params=params)
         return [doc.content for doc in results.docs]
 

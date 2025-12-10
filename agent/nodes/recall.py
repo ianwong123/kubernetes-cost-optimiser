@@ -1,4 +1,4 @@
-from typign import Dict, Any
+from typing import Dict, Any
 from state import AgentState
 from utils.redis_client import get_redis_client
 from memory.vector_store import RedisVectorStore
