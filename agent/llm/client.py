@@ -6,10 +6,10 @@ def get_llm():
     """
     Initialises the Ollama Chat Model
     Ensure ollama serve is running and the model is pulled:
-    $ ollama pull qwen2.5:6b
+    $ ollama pull qwen2.5:3b
     """
     # downgrade from 7b because system dont have enough memory T-T
-    model_name = os.getenv("LLM_MODEL", "qwen2.5:1.5b")
+    model_name = os.getenv("LLM_MODEL", "qwen2.5:3b")
     base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
     print(f"Initialising LLM: {model_name} at {base_url}")
