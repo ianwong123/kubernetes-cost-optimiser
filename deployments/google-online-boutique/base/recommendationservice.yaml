@@ -25,51 +25,51 @@ spec:
         app: recommendationservice
     spec:
       containers:
-        - env:
-            - name: PORT
-              value: "8080"
-            - name: PRODUCT_CATALOG_SERVICE_ADDR
-              value: productcatalogservice:3550
-            - name: DISABLE_PROFILER
-              value: "1"
-          image: us-central1-docker.pkg.dev/google-samples/microservices-demo/recommendationservice:v0.10.3
-          imagePullPolicy: IfNotPresent
-          livenessProbe:
-            failureThreshold: 3
-            grpc:
-              port: 8080
-              service: ""
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 1
-          name: server
-          ports:
-            - containerPort: 8080
-              protocol: TCP
-          readinessProbe:
-            failureThreshold: 3
-            grpc:
-              port: 8080
-              service: ""
-            periodSeconds: 5
-            successThreshold: 1
-            timeoutSeconds: 1
-          resources:
-            limits:
-              cpu: 200m
-              memory: 450Mi
-            requests:
-              cpu: 100m
-              memory: 220Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
+      - env:
+        - name: PORT
+          value: '8080'
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: productcatalogservice:3550
+        - name: DISABLE_PROFILER
+          value: '1'
+        image: us-central1-docker.pkg.dev/google-samples/microservices-demo/recommendationservice:v0.10.3
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 8080
+            service: ''
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: server
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 8080
+            service: ''
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 302m
+            memory: 29Mi
+          limits:
+            cpu: 302m
+            memory: 29Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
