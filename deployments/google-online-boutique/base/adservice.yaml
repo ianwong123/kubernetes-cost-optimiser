@@ -54,10 +54,10 @@ spec:
           timeoutSeconds: 1
         resources:
           requests:
-            cpu: 512m
+            cpu: 500m
             memory: 512Mi
           limits:
-            cpu: 1024m
+            cpu: 1000m
             memory: 1Gi
         securityContext:
           allowPrivilegeEscalation: false
