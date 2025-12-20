@@ -61,7 +61,7 @@ class GitHubClient(SCMClient):
             self.repo.update_file(path=contents.path, message=f"optimise {deployment_name} resource", content=new_content, sha=contents.sha, branch=new_branch)
 
             # open pr
-            pr = self.repo.create_pull(title=f"Optimise {deployment_name} resource", body=f"##Reasoning\n{reasoning}\n\n -Changes based on metrics analysis", head=new_branch, base=base_branch)
+            pr = self.repo.create_pull(title=f"Optimise {deployment_name} resource", body=f"##Reasoning\n{reasoning}\n\n -Changes based on metrics analysis (Qwen 2.5:7b) ", head=new_branch, base=base_branch)
             return pr.html_url
 
         except Exception as e:
