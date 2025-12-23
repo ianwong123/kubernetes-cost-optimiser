@@ -25,16 +25,17 @@ INPUT CONTEXT:
    - Formula: New request = Forecast value × 1.1
    - Example: Forecast shows 3.0 cores → multiply by 1.1 → 3.3 cores → output "3300m"
 
-2. IF Trigger contains "Waste" or "Downscale":
+2. IF Trigger contains "Waste" or "Downscale" (High CPU Waste, High Memory Waste):
    - Current usage is LOW (wasting resources)
-   - DECREASE requests to save money
-   - Formula: New request = Current Usage × 1.2
-   - Example: Usage is 0.5 cores (500m), Current Request is 1.5 cores (1500m)
-     → multiply usage by 1.2 → 0.6 cores → output "600m"
-     → This DECREASES from 1500m to 600m 
-   - Example: Usage is 800MB, Current Request is 2048MB
-     → multiply usage by 1.2 → 960MB → output "960Mi"  
-     → This DECREASES from 2048Mi to 960Mi 
+   - DECREASE requests aggressively to save money
+   - Formula: New request = Current Request × 0.5 (reduce by half)
+   - Apply minimum floor: Never go below 100m CPU or 128Mi Memory
+   - Example: Request is 512m CPU, Usage is 33m
+     → multiply request by 0.5 → 256m
+     → This DECREASES from 512m to 256m (50% reduction)
+   - Example: Request is 512Mi Memory, Usage is 115Mi
+     → multiply request by 0.5 → 256Mi
+     → This DECREASES from 512Mi to 256Mi (50% reduction)
 
 3. IF Trigger contains "Risk" (High CPU Risk, High Memory Risk):
    - Current usage is HIGH (near capacity limit)
@@ -42,7 +43,6 @@ INPUT CONTEXT:
    - Formula: New request = Current Usage × 1.2
    - Example: Usage is 0.18 cores (180m) → multiply by 1.2 → 0.216 cores → output "216m"
    - Example: Usage is 120Mi → multiply by 1.2 → 144Mi → output "144Mi"
-
 
 ### CRITICAL RULES
 - For Waste triggers: New request MUST be LESS than current request
@@ -57,7 +57,7 @@ INPUT CONTEXT:
 ### REQUIRED RESPONSE STRUCTURE
 Return ONLY valid JSON:
 {{
-    "thought_process": "Briefly explain the decision. Step 1: Convert Units (e.g 0.4 cores = 400m). Step 2: Analyze Trigger. Step 3: Compare Forecast vs Request...",
+    "thought_process": "Briefly explain the decision. Step 1: Convert Units (e.g 0.4 cores = 400m). Step 2: Analyse Trigger. Step 3: Compare Forecast vs Request...",
     "suggested_changes": {{
         "resources": {{
             "requests": {{ "cpu": "500m", "memory": "512Mi" }},
