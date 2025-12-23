@@ -1,121 +1,146 @@
 # AI-Driven Kubernetes Cost Optimser
-An autonomous system that reduces cloud costs by dynamically right-sizing Kubernetes
-resources, eliminating over-provisioning without performance degradation.
+Autonomous system that reduces cloud costs by right-sizing Kubernetes resources using time-series forecasting and 
+retrieval-augmented generation (RAG), with built-in safety controls.
+
+Instead of presenting a final sanitised version of the product, details on system design, proposed designs, and both successful outcomes 
+and rejected approaches are all documented.
 
 In this README:
-* [How it Works](#how-it-works)
-* [Architecture Overview](#architecture-overview)
-* [More Information](#more-information)
-<!--* [Install](#install)-->
+* [The Problem](#the-problem)
+* [System Components](#system-components)
+* [Architecture](#architecture)
+* [Agent Lifecycle](#agent-lifecycle)
+* [Scope, Constraints, and Implementation Decisions](#scope-constraints-and-implementation-decisions)
+* [Project Status](#project-status)
+* [Further Reading](#further-reading)
+
+<!--* [Future Work and Some Reflection](#future-work-and-some-reflection)-->
+
+## The Problem
+"You pay for what you request, not what you use."
+
+Over-provisioned pods waste money. Under-provisioned pods crash.
+
+Consider a single VM that costs $0.04/hour, with 2 vCPU and 4 GiB RAM available. Whether workloads consume 90% of those resources or just 10%, the VM still costs $0.04/hour. From the cloud provider’s perspective, that capacity is reserved. At the pod level, this means resource requests and limits directly determine how much VM capacity is consumed. Over-requesting resources leads to underutilised nodes and wasted spend.
+
+* **Low traffic + high requests** = idle capacity, wasted spend
+* **High traffic + conservative limits** = throttling, OOM, degraded performance
+
+Existing tools do not solve this when cost appears to be a priority:
+* **HPA/KEDA** scale replicas but don't fix over-provisioned requests
+* **VPA** adjusts resources reactively but can be disruptive
+* **Cluster Autoscaler** provisions nodes based on inflated requests
+
+**This project aims to reduce Kubernetes infrastructure costs by eliminating the gap between reserved capacity and actual resource consumption without degrading application performance.**
+
+## System Components
+[Google's Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo) serves as the sample workload in `default` namespace to provide varied workload patterns to validate the optimisation approach.
+
+The system runs as a continuous, event-driven loop across four layers:
+
+### 1. Observability and Data Generation
+* **K3d cluster** hosts Online Boutique application and supporting services across one control plane and two worker nodes
+* **Prometheus** scrapes CPU/memory metrics, capturing container usage, and resource requests 
+* **Grafana** displays optimisation impact, cost comparisons, resource utilisation, waste percentages, and forecasted demand
+* **Cost Engine** queries Prometheus for resource requests, calculates VM requirements, and exposes cost metrics 
+* **Forecast Service** retrieves historical usage, trains Prophet models, predicts resource requirements for next twenty-four hours
+* **VPA Analyser** queries Kubernetes API for VPA recommendations without injecting changes
+
+### 2. Data Ingestion, Aggregation, and Dispatch
+* **Metric Hub** validates payloads, merges asynchronous cost and forecast streams, evaluates thresholds using business logic
+* **Redis Stack** stores cost/forecast snapshots, manages job queue, provides vector search for Agent's RAG system
+
+### 3. Reasoning and Execution
+* **Ollama** runs Qwen 2.5 (7B) model locally for agent reasoning without external API dependencies
+* **Agent** polls queue, retrieves past optimisations via RAG, generates patches using CoT prompting, creates GitHub PRs
+* **Learner Server** listens for webhook events from GitHub repo, extracts reasoning from merged PRs, stores success embeddings in Redis Stack
+
+### 4. Continuous Delivery
+* **GitHub** stores deployment manifests, enforces PR review workflow before cluster changes
+* **ArgoCD** watches the Git repo and applies merged changes to the cluster
+
+## Architecture 
+<img src="img/architecture.png" alt="Architecture Diagram" width="700">
+
+## Agent Lifecycle
+A detailed breakdown of the agent's state machine and execution flow: [Agent Design](./docs/agent-design.md)
+
+<img src="img/agent-lifecycle.png" alt="Agent Lifecycle Diagram" width="1000">
+
+## Scope, Constraints and Implementation Decisions
+The system adheres to best practices such as separation of concerns and keeping the codebase modular for testability and future extensibility. 
+
+**Scope:**
+* This project focuses exclusively on optimising CPU and memory requests for individual Kubernetes pods defined in a single namespace where the sample workload runs
+* The project assumes some fixed replica counts, where possible, to target vertical resource efficiency rather than horizontal scaling
+* The project assumes a conscious trade-off between stability and efficiency
+* System performance is evaluated against VPA (Vertical Pod Autoscaler) recommendations as a baseline
+
+**Constraints:**
+* Cost calculations are simplied and based on a single VM pricing model rather cloud provider billing APIs
+* Development and testing runs on WSL, which constrains available resources and performance for testing larger workloads
+* The implementation prioritises the core optimisation pipeline over production-grade hardening (e.g. security policies, node affinity , etc)
+
+**Implementation Decisions:**
+
+The current infrastructure only contains basic secret management. It does not include, and is not limited to some of the best/advanced practices such as:
+* Control plane harderning, security policies, node affinity 
+* Scheduling policies (Taints/tolerations)
+* Rate limiting, TLS configuration
+* Automated Grafana dashboard provisioning
+
+or any sort of design that introduces additional complexity and overhead towards the development of this project.
+
+> **Note:** This is a prototype demonstrating feasibility of AI-driven Kubernetes cost optimisation. It is **not production-ready.**
+
+## Project Status
+- [x] Infrastructure deployed and operational 
+- [x] Optimisation pipeline functional  
+- [x] Agent successfully creates PRs with reasoning  
+- [x] Feedback loop captures validated decisions  
+- [x] Agent successfully retrieves relevant past optimisation from memory (RAG)  
+- [ ] Fine-tuning LLM prompt for waste reduction accuracy  
+- [ ] Evaluation against VPA baseline in progress  
+
+## Further Reading
+* [Agent Design](./docs/agent-design.md) - Agent lifecycle design and state machine 
+* [Cost Model](./docs/cost-model.md) - Cost calculation methodology
+* [Metric Hub](./docs/metric-hub.md) - Metric Hub design 
+* [Proposed Designs](./docs/proposed-designs.md) - Previously proposed designs, rejected approaches, challenges, and outcomes
+<!--* [Testing Strategy](./docs/testing.md) - Test strategies and validation -->
+
+<!--
+## Future Work and Some Reflection
+This project started simply out of curiousity. Because I wanted to know whether an agent could reduce Kubernetes cost and thought it'll be interesting to take on this challenge, albeit I don't have any production experience and with tools like KEDA or CA.  The current system remains a prototype, validated using a sample workload, and is still undergoing continuous improvements. Since it is designed with extensibility in mind to support broader deployment scenarios and more robust operational features, one could extend and swap out concrete implementations such as the Redis Queue.
+
+Some potential extensions include:
+* Extend to multi-namespace cost aggregation
+* Integrate with external observability tools
+* Support multiple cloud providers (AWS, GCP, Azure)
+* Allowing configuration through a single YAML file for containing VM types, names, and provider details to decouple the system from cluster-specific assumptions
+* Add priority queuing for risk-based alert handling
+
+It's unlikely that I would be maintaining this as a long-term maintained project. There are other areas I would rather focus on exploring and improving next. However, i'll come back to this project from time to time in the near future to see what kind of changes I could make from the new experiences I look forward to.
+
+_Hi job market, pls be kind_ (┳◡┳)
+
+### Ok but with that said (눈_눈) 
+This is one of the first times I have designed and implemented a system from start to finish. It's not the best, there are certainly better ways to do this, and in a more realistic production setting, I expect tools and data to be more diverse and complex than this.
+
+But for the scope of this project, I'm genuinely really satisfied with the outcome ┐(´～｀)┌ 
+
+I've given my all using the cards at hand and learned a lot through this project. What more could I have asked for? _Probably some more feedback_   
 
 
-## How it Works
-The system operates on a core design principle: **we assume fixed replica counts to optimise resource requests**, eliminating over-provisioning at its source. This focuses the optimisation on the fundamental unit of cost (i.e. individual pod request), rather than multiplying inefficiency by scaling replica counts. 
+The next project will likely focus on improving developer experience, inspired by on one of the challenges found here. Probably something that can spin up a test environment in the cluster to test code before creating some pull request or pushing changes, and destroy automatically when its done.
 
-[Google's Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo), a cloud-native e-commerce demo application consisting of 11 microservices, serves as the sample workload to provide realistic, varied workload patterns (frontend, product catalog, cart service, etc,.) to validate the optimisation approach.
 
-The system functions a continuous feedback loop with components running at different intervals:
+Anyway, thuo shalt end here.
 
-### Monitoring and Analysis
-* **Prometheus** scrapes pod CPU/memory usage from a k3d cluster every **15 seconds**
-* The **Forecast Engine** continuously analyses trends using Facebook Prophet
-* The **Cost Engine** constantly calculates infrastructure cost based on current resource requests
-* **Grafana** visualises cost, metrics, requests, etc,.
+I rest my case.
 
-### AI Agent 
-* The **AI Agent** is triggered every 15 mins, receiving a context of: forecasted demand, current usage, resource requests, and cost analysis.
-* The agent **decides new, optimised resource requests** for individual pods 
-* It generates an **explainable rationale** for each change.
-* Decisions are committed as **YAML manifests to Git**.
+~ Ian (シ_ _)シ
 
-### GitOps Deployment 
-* **ArgoCD** automatically detects the Git commit and syncs the changes to the cluster.
-* Every modification is **versioned, auditable, and reversible**.
+_"It works on my machine"_-->
 
-## Architecture Overview
-The system operates as a continuous feedback loop: 
-```Monitor -> Forecast -> Decide -> Deploy```
-
-The diagram below illustrates a high-level overview of the system architecture and data flow.
-
-```mermaid 
----
-config:
-  theme: neutral
-  flowchart:
-    curve: basis
----
-
-flowchart TD
-    %% Load testing / Traffic simulator    
-    locust[Locust<br/>Synthetic Traffic Generator]
-
-    %% Infrastructure Layer
-    k8s[K3d Cluster<br/>Google Online Boutique]
-    prom[Prometheus<br/>15s CPU/Memory Scrape Interval]
-    promdb[(Prometheus TSDB<br/>Time-Series Storage)]
-    grafana[Grafana Dashboard<br/>Cost & Usage Visualisation]
-
-    %% Monitoring Trigger
-    cron{{Forecast Trigger<br/>15-min Interval}}
-
-    %% Forecast & Cost Engine
-    subgraph Forecast & Cost Engine
-        trend[Trend Analysis Module<br/>Facebook Prophet]
-        azure-api[VM-Based Cost Calculator<br/>Azure Pricing]
-        prompt-builder[Context Builder<br/>Forecast + Request + Cost]
-    end
-
-    %% AI Decision Engine
-    subgraph AI Agent
-        agent[LangChain Orchestrator]
-        ollama[Ollama Runtime<br/>QWEN 2.5:7b]
-        reasoning[Inference Engine<br/>Scaling Decisions]
-        explanation[Decision Rationale Generator]
-    end
-
-    %% GitOps Deployment Pipeline
-    generate-yaml[YAML Patch Generator]
-    git-commit[GitOps Commit<br/>Versioned Deployment]
-    argocd[ArgoCD Sync<br/>30s Interval]
-
-    %% Flow connections
-    locust -->|Simulates user load| k8s     
-    k8s -->|Exposes pod-level metrics| prom
-    prom -->|Stores time-series data| promdb
-    promdb -->|Visualise metrics| grafana
-    promdb -->|Historical + current usage| trend
-    promdb -->|Current request| azure-api
-    azure-api -->|VM count and cost| prompt-builder
-    trend -->|Forecasted demand| prompt-builder
-    prompt-builder -->|Structured context| agent
-    cron -->|Triggers AI cycle| agent
-    agent -->|Passes prompt| ollama
-    ollama -->|Inference| reasoning
-    reasoning -->|Optimisation decisions| explanation
-
-    %% GitOps pipeline
-    reasoning -->|Decisions| generate-yaml
-    generate-yaml -->|Update YAML| git-commit
-    git-commit -->|Triggers sync| argocd
-    argocd -->|Applies scaling decisions| k8s
-```
-<!--## Install
-1. **Start by cloning the repository**
-```bash
-git clone https://github.com/ianwong123/kubernetes-cost-optimiser.git
-cd kubernetes-cost-optimiser
-```
-
-2. **Run the installation script**
-```bash
-./system.sh
-```
--->
-
-## More Information
-Here are some other documents you may wish to read:
-* [cost-model.md](cost-model.md)
-* agent-internal-workflow.md (TBA)
-
-> Note: This is not a google project. This is an independent project and is still a work in progress.
+> **Note**: This is an independent project, not affiliated with Google or any cloud provider.

@@ -23,10 +23,6 @@ charts/
 *.tgz
 Chart.lock
 
-# Documentation artifacts
-*pdf
-*png
-
 # Temporary files
 *.tmp
 *.log
