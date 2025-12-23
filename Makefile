@@ -36,10 +36,6 @@ agent:
 
 learner:
 	@echo "Starting the webhook server (learner)"
-	@export REDIS_SERVICE_ADDR="127.0.0.1:6379" && \
-	export REDIS_SERVICE_PASS="" && \
-	export LLM_MODEL="qwen2.5:3b"&& \
-	source venv/bin/activate && \
 	python3 agent/learner.py
 
 payload:

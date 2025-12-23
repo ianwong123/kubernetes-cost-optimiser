@@ -67,7 +67,7 @@ func (a *Aggregator) SaveCostPayload(p *CostPayload) error {
 }
 
 func (a *Aggregator) CheckCostThreshold(ctx context.Context, p *CostPayload) {
-	fmt.Printf("[Background] Starting threshold check for %d deployments", len(p.Deployments))
+	fmt.Printf("[Background] Starting threshold check for %d deployments\n", len(p.Deployments))
 
 	ns := p.Namespace
 	clusterInfo := p.ClusterInfo
