@@ -9,36 +9,34 @@ import (
 )
 
 func TestCostEngineSuccess(t *testing.T) {
-	// 1. Create Cost Payload to set baseline
 	var jsonStr = []byte(`{
-  "source": "cost-engine",
-  "timestamp": "2024-01-01T12:00:00Z",
+  "timestamp": "2025-12-22T14:04:43.684548Z",
   "namespace": "default",
   "cluster_info": {
-    "vm_count": 3,
-    "current_hourly_cost": 1.25
+    "vm_count": 9,
+    "current_hourly_cost": 0.36
   },
   "deployments": [
     {
       "name": "adservice",
       "current_requests": {
-        "cpu_cores": 1.0,
-        "memory_mb": 4096
+        "cpu_cores": 0.512,
+        "memory_mb": 512
       },
       "current_usage": {
-        "cpu_cores": 0.4,
-        "memory_mb": 512
+        "cpu_cores": 0.033,
+        "memory_mb": 115
       }
     },
     {
       "name": "cartservice",
       "current_requests": {
-        "cpu_cores": 1.5,
-        "memory_mb": 2048
+        "cpu_cores": 0.512,
+        "memory_mb": 512
       },
       "current_usage": {
-        "cpu_cores": 0.8,
-        "memory_mb": 1024
+        "cpu_cores": 0.033,
+        "memory_mb": 115
       }
     }
   ]
