@@ -27,12 +27,14 @@ def reason_optimisation(state: AgentState) -> Dict[str, Any]:
     # invoke llm
     # note: prediction might be None for pure Cost jobs, handle gracefully
     try:
-       response = chain.invoke({
+        print(f"[PROCESSING] Memory context being sent: {state.get('memory_context')}")
+        response = chain.invoke({
             "reason": state.get("reason", "Unknown"),
             "deployment_name": dep_name,
             "current_requests": deployment_data.get("current_requests", {}),
             "current_usage": deployment_data.get("current_usage", {}),
-            "prediction": prediction_data
+            "prediction": prediction_data,
+            "memory_context": state.get("memory_context", "No past optimisations found") 
         })
     except Exception as e:
         print(f"LLM invocation failed: {e}")

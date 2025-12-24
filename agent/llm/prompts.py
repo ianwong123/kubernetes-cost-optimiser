@@ -10,6 +10,12 @@ INPUT CONTEXT:
 - Current Usage: {current_usage} (Units: Cores, MB)
 - Forecast (24h Peak): {prediction} (Units: Cores, MB)
 
+### HISTORICAL CONTEXT (Similar Past Optimisations)
+{memory_context}
+IMPORTANT: If historical context is provided above, you MUST reference it in Step 1 of your thought process. Explain how past similar cases inform your current decision.
+
+If no context is available, state "No historical precedent found" in Step 1.
+
 ### CRITICAL UNIT STANDARDS
 1. CPU: Use millicores 'm' suffix
    - Example: 0.5 cores -> "500m"
@@ -47,7 +53,10 @@ INPUT CONTEXT:
 ### CRITICAL RULES
 - For Waste triggers: New request MUST be LESS than current request
 - For Risk triggers: New request MUST be MORE than current request but LESS than 2x current request
-- Limits are always 2x the requests
+- **LIMITS CALCULATION: Limits are ALWAYS exactly 2x the requests**
+  - Example: If CPU request is 250m, CPU limit MUST be 500m (250 × 2)
+  - Example: If Memory request is 256Mi, Memory limit MUST be 512Mi (256 × 2)
+  - **Never use 1Gi or 2Gi for limits unless the request calculation results in exactly that value**
 
 ### MULTIPLICATION RULES
 - When I say "× 1.2", I mean multiply the number by 1.2 (NOT add 120%)
@@ -57,7 +66,7 @@ INPUT CONTEXT:
 ### REQUIRED RESPONSE STRUCTURE
 Return ONLY valid JSON:
 {{
-    "thought_process": "Briefly explain the decision. Step 1: Convert Units (e.g 0.4 cores = 400m). Step 2: Analyse Trigger. Step 3: Compare Forecast vs Request...",
+    "thought_process": "Briefly explain the decision. Step 1: Historical Context - [Reference past cases if available, or state 'No historical precedent']. Step 2: Convert Units (e.g 0.4 cores = 400m). Step 3: Analyse Trigger. Step 4: Apply Formula. Step 5: Calculate Limits - Limits are always 2× requests (e.g., 250m × 2 = 500m)...",
     "suggested_changes": {{
         "resources": {{
             "requests": {{ "cpu": "500m", "memory": "512Mi" }},
