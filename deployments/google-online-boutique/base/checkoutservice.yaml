@@ -25,59 +25,59 @@ spec:
         app: checkoutservice
     spec:
       containers:
-        - env:
-            - name: PORT
-              value: "5050"
-            - name: PRODUCT_CATALOG_SERVICE_ADDR
-              value: productcatalogservice:3550
-            - name: SHIPPING_SERVICE_ADDR
-              value: shippingservice:50051
-            - name: PAYMENT_SERVICE_ADDR
-              value: paymentservice:50051
-            - name: EMAIL_SERVICE_ADDR
-              value: emailservice:5000
-            - name: CURRENCY_SERVICE_ADDR
-              value: currencyservice:7000
-            - name: CART_SERVICE_ADDR
-              value: cartservice:7070
-          image: us-central1-docker.pkg.dev/google-samples/microservices-demo/checkoutservice:v0.10.3
-          imagePullPolicy: IfNotPresent
-          livenessProbe:
-            failureThreshold: 3
-            grpc:
-              port: 5050
-              service: ""
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 1
-          name: server
-          ports:
-            - containerPort: 5050
-              protocol: TCP
-          readinessProbe:
-            failureThreshold: 3
-            grpc:
-              port: 5050
-              service: ""
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 1
-          resources:
-            limits:
-              cpu: 1024m
-              memory: 900Mi
-            requests:
-              cpu: 512m
-              memory: 512Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
+      - env:
+        - name: PORT
+          value: '5050'
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: productcatalogservice:3550
+        - name: SHIPPING_SERVICE_ADDR
+          value: shippingservice:50051
+        - name: PAYMENT_SERVICE_ADDR
+          value: paymentservice:50051
+        - name: EMAIL_SERVICE_ADDR
+          value: emailservice:5000
+        - name: CURRENCY_SERVICE_ADDR
+          value: currencyservice:7000
+        - name: CART_SERVICE_ADDR
+          value: cartservice:7070
+        image: us-central1-docker.pkg.dev/google-samples/microservices-demo/checkoutservice:v0.10.3
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 5050
+            service: ''
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: server
+        ports:
+        - containerPort: 5050
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 5050
+            service: ''
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          requests:
+            cpu: 256m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       schedulerName: default-scheduler
