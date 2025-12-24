@@ -8,6 +8,7 @@ In this document:
 * [Node Responsibilities](#node-responsibilities)
 * [Memory and Learning](#memory-and-learning)
 * [Safety Mechanisms](#safety-mechanisms)
+* [Integrating Webhooks](#integrating-webhooks)
 
 ## Overview
 The agent runs outside the Kubernetes cluster and connects to Redis via port-forwarding. It operates in two independent streams:
@@ -116,7 +117,7 @@ Future Recall operations will retrieve this knowledge, creating memory that impr
 ## Node Responsibilities
 | Node | Input | Operation | Output |
 |------|-------|-----------|--------|
-| **Poller** | Redis Queue | Blocking pop, schema validation | Initializes shared state |
+| **Poller** | Redis Queue | Blocking pop, schema validation | Initialises shared state |
 | **Recall** | Job description | Vector search (KNN, k=3) | Adds historical context to state |
 | **Reasoner** | Metrics + Context | LLM invocation with CoT prompting, validation | Adds thought process and patch to state |
 | **Action** | Thought process + Validated patch | Git workflow (branch, patch, commit, PR) | PR URL added to state |
@@ -152,3 +153,23 @@ Jobs are identified by unique IDs. Failed operations can be retried without crea
 
 ### 5. Job Loss on Crash
 If the agent crashes, unprocessed jobs remain in the Redis queue. The agent resumes polling when restarted. However, jobs being actively processed at the time of the crash are lost. No distributed fault tolerance (leader election, job acknowledgment) is implemented in this prototype.
+
+## Integrating Webhooks
+During development, the Learner Server (FastAPI + Uvicorn) runs locally and cannot receive webhooks directly from GitHub. An SSH reverse tunnel via `localhost.run` exposes the local server to the internet:
+
+<img src="../img/ssh-reverse-tunnel.png" alt="SSH Reverse Tunnel" width="700">
+
+
+**Setup Command:**
+```bash
+ssh -R 80:localhost:8010 localhost.run
+```
+
+This generates a public HTTPS URL (e.g., `https://abc123.lhr.life`) that forwards traffic to the Learner Server running lcally at `localhost:8010` on the `/webhook` endpoint. This URL is configured in the GitHub repository's webhook settings.
+
+**Production Deployment:**  
+In production, the Learner Server would run as a Kubernetes service behind an ingress controller which elimnates the need for SSH tunnels.
+
+Reference to the tunnel service documentation: [Localhost.run](https://localhost.run/docs/)
+
+_Arigato localhost.run for saving me \(シ\_ \_ \)シ_

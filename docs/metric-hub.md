@@ -1,7 +1,7 @@
 # Metric Hub
 The Metric Hub is a high-throughput API gateway and state aggregator written in Go. It sits between the observability layer (Cost Engine, Forecast Service) and the agent, validating incoming metrics, merging asynchronous data streams, and dispatching optimisation jobs when thresholds are violated.
 
-**In this document:**
+In this document:
 * [Overview](#overview)
 * [Design](#design)
 * [Data Model](#data-model)
@@ -106,16 +106,14 @@ The Hub applies **business logic**: stability checks run first, efficiency check
 |---------|-----------|--------|
 | High Memory Risk | Memory util > 85% | Dispatch "High Memory Risk" job |
 | High CPU Risk | CPU util > 85% | Dispatch "High CPU Risk" job |
-| Predicted Capacity Risk (Memory) | Forecast > 90% of request | Dispatch "Predicted Capacity Risk (Memory)" job |
-| Predicted Capacity Risk (CPU) | Forecast > 90% of request | Dispatch "Predicted Capacity Risk (CPU)" job |
 
 ### Priority 2: Efficiency (Reduce Waste)
 | Trigger | Condition | Action |
 |---------|-----------|--------|
 | High Memory Waste | Memory waste > 50% | Dispatch "High Memory Waste" job |
 | High CPU Waste | CPU waste > 50% | Dispatch "High CPU Waste" job |
-| Safe Downscale (Memory) | Waste > 40% AND forecast < 60% of request | Dispatch "Safe Downscale (Memory)" job |
-| Safe Downscale (CPU) | Waste > 40% AND forecast < 60% of request | Dispatch "Safe Downscale (CPU)" job |
+<!--| Safe Downscale (Memory) | Waste > 40% AND forecast < 60% of request | Dispatch "Safe Downscale (Memory)" job |
+| Safe Downscale (CPU) | Waste > 40% AND forecast < 60% of request | Dispatch "Safe Downscale (CPU)" job |-->
 
 
 **Waste Formula:**  
