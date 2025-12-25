@@ -227,7 +227,7 @@ func (a *Aggregator) CheckForecastThreshold(ctx context.Context, p *ForecastPayl
 		if costDep, exists := costMap[forecastDep.Name]; exists {
 			a.evaluateForecastLogic(ctx, forecastDep, costDep, costPayload.Namespace, costPayload.ClusterInfo)
 		} else {
-			fmt.Printf("No cost data found for forecast deployment %v", forecastDep.Name)
+			fmt.Printf("No cost data found for forecast deployment %v\n", forecastDep.Name)
 		}
 	}
 }
