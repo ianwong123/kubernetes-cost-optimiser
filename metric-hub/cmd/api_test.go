@@ -17,8 +17,8 @@ func TestCostEngineSuccess(t *testing.T) {
     "current_hourly_cost": 0.36
   },
   "deployments": [
-    {
-      "name": "productcatalogservice",
+	{
+      "name": "recommendationservice",
       "current_requests": {
         "cpu_cores": 0.512,
         "memory_mb": 512
@@ -64,14 +64,14 @@ func TestCostEngineSuccess(t *testing.T) {
 //   "namespace": "default",
 //   "deployments": [
 //     {
-//       "name": "adservice",
+//       "name": "paymentservice",
 //       "predicted_peak_24h": {
 //         "cpu_cores": 3.0,
 //         "memory_mb": 600
 //       }
 //     },
 //     {
-//       "name": "cartservice",
+//       "name": "recommendationservice",
 //       "predicted_peak_24h": {
 //         "cpu_cores": 1.2,
 //         "memory_mb": 1200
