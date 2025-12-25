@@ -29,26 +29,27 @@ If no context is available, state "No historical precedent found" in Step 1.
    - A future spike is coming (forecast data shows peak demand)
    - INCREASE requests to handle the spike
    - Formula: New request = Forecast value × 1.1
-   - Example: Forecast shows 3.0 cores → multiply by 1.1 → 3.3 cores → output "3300m"
+   - Example: Forecast shows 3.0 cores -> multiply by 1.1 -> 3.3 cores -> output "3300m"
 
 2. IF Trigger contains "Waste" or "Downscale" (High CPU Waste, High Memory Waste):
    - Current usage is LOW (wasting resources)
    - DECREASE requests aggressively to save money
    - Formula: New request = Current Request × 0.5 (reduce by half)
+   - **Apply this formula to BOTH CPU and Memory independently**
    - Apply minimum floor: Never go below 100m CPU or 128Mi Memory
-   - Example: Request is 512m CPU, Usage is 33m
-     → multiply request by 0.5 → 256m
-     → This DECREASES from 512m to 256m (50% reduction)
-   - Example: Request is 512Mi Memory, Usage is 115Mi
-     → multiply request by 0.5 → 256Mi
-     → This DECREASES from 512Mi to 256Mi (50% reduction)
+   - Example (CPU): Request is 512m CPU, Usage is 33m
+     -> multiply request by 0.5 -> 256m
+     -> This DECREASES from 512m to 256m (50% reduction)
+   - Example (Memory): Request is 512Mi Memory, Usage is 115Mi
+     -> multiply request by 0.5 -> 256Mi
+     -> This DECREASES from 512Mi to 256Mi (50% reduction)
 
 3. IF Trigger contains "Risk" (High CPU Risk, High Memory Risk):
    - Current usage is HIGH (near capacity limit)
    - INCREASE requests slightly for safety
    - Formula: New request = Current Usage × 1.2
-   - Example: Usage is 0.18 cores (180m) → multiply by 1.2 → 0.216 cores → output "216m"
-   - Example: Usage is 120Mi → multiply by 1.2 → 144Mi → output "144Mi"
+   - Example: Usage is 0.18 cores (180m) -> multiply by 1.2 -> 0.216 cores -> output "216m"
+   - Example: Usage is 120Mi → multiply by 1.2 -> 144Mi -> output "144Mi"
 
 ### CRITICAL RULES
 - For Waste triggers: New request MUST be LESS than current request
@@ -66,7 +67,7 @@ If no context is available, state "No historical precedent found" in Step 1.
 ### REQUIRED RESPONSE STRUCTURE
 Return ONLY valid JSON:
 {{
-    "thought_process": "Briefly explain the decision. Step 1: Historical Context - [Reference past cases if available, or state 'No historical precedent']. Step 2: Convert Units (e.g 0.4 cores = 400m). Step 3: Analyse Trigger. Step 4: Apply Formula. Step 5: Calculate Limits - Limits are always 2× requests (e.g., 250m × 2 = 500m)...",
+    "thought_process": "Briefly explain the decision. Step 1: Historical Context - [Reference past cases if available, or state 'No historical precedent']. Step 2: Convert Units (e.g 0.4 cores = 400m). Step 3: Analyse Trigger. Step 4: Apply Formula - Reduce BOTH CPU and Memory by 50%. CPU: 512m × 0.5 = 256m. Memory: 512Mi × 0.5 = 256Mi. . Step 5: Calculate Limits - Limits are always 2× requests (e.g., 250m × 2 = 500m)...",
     "suggested_changes": {{
         "resources": {{
             "requests": {{ "cpu": "500m", "memory": "512Mi" }},
