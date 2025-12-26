@@ -13,12 +13,34 @@ func TestCostEngineSuccess(t *testing.T) {
   "timestamp": "2025-12-22T14:04:43.684548Z",
   "namespace": "default",
   "cluster_info": {
-    "vm_count": 9,
-    "current_hourly_cost": 0.36
+    "vm_count": 6,
+    "current_hourly_cost": 0.24
   },
   "deployments": [
+  	{
+      "name": "productcatalogservice",
+      "current_requests": {
+        "cpu_cores": 0.512,
+        "memory_mb": 512
+      },
+      "current_usage": {
+        "cpu_cores": 0.033,
+        "memory_mb": 115
+      }
+    },
 	{
-      "name": "recommendationservice",
+      "name": "frontend",
+      "current_requests": {
+        "cpu_cores": 0.512,
+        "memory_mb": 512
+      },
+      "current_usage": {
+        "cpu_cores": 0.010,
+        "memory_mb": 115
+      }
+    },
+	{
+      "name": "currencyservice",
       "current_requests": {
         "cpu_cores": 0.512,
         "memory_mb": 512
