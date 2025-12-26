@@ -132,6 +132,14 @@ Vector (384-dim): [0.23, -0.45, 0.12, ...]
 Metadata: "Scenario: adservice - High Waste | Outcome: Success | CPU: 512m -> 256m"
 ```
 
+**Knowledge Base Growth:**  
+The vector store initially contains zero embeddings. As PRs merge, the knowledge base expands progressively. Early jobs retrieve zero to one relevant case. After several successful optimisations, the agent retrieves three similar precedents per query. This demonstrates **real-time learning** where each merged PR immediately becomes available for future recall without requiring model retraining or system restarts.
+
+<img src="../img/real-time-learning.png" alt="SSH Reverse Tunnel" width="700">
+
+
+
+
 ## Safety Mechanisms
 ### 1. Safety Control with PRs
 All changes require PR approval. No automatic cluster modifications.

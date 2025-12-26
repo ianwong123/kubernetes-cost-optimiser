@@ -2,6 +2,8 @@
 Autonomous system that reduces cloud costs by right-sizing Kubernetes resources using time-series forecasting and 
 retrieval-augmented generation (RAG), with built-in safety controls.
 
+[Watch the Demo](https://github.com/ianwong123/kubernetes-cost-optimiser/releases/tag/v0.1-demo)
+
 Instead of presenting a final sanitised version of the product, details on system design, proposed designs, and both successful outcomes 
 and rejected approaches are all documented.
 
@@ -53,7 +55,7 @@ The system runs as a continuous, event-driven loop across four layers:
 ### 3. Reasoning and Execution
 * **Ollama** runs Qwen 2.5 (7B) model locally for agent reasoning without external API dependencies
 * **Agent** polls queue, retrieves past optimisations via RAG, generates patches using CoT prompting, creates GitHub PRs
-* **Learner Server** listens for webhook events from GitHub repo, extracts reasoning from merged PRs, stores success embeddings in Redis Stack
+* **Learner Server** listens for webhook events from GitHub repo, extracts reasoning from merged PRs, stores success embeddings in Redis Stack **in real-time**
 
 ### 4. Continuous Delivery
 * **GitHub** stores deployment manifests, enforces PR review workflow before cluster changes
@@ -66,6 +68,9 @@ The system runs as a continuous, event-driven loop across four layers:
 A detailed breakdown of the agent's state machine and execution flow: [Agent Design](./docs/agent-design.md)
 
 <img src="img/agent-lifecycle.png" alt="Agent Lifecycle Diagram" width="1000">
+
+
+> **Real-Time Learning:** Each merged PR immediately updates the knowledge base. The agent retrieves 0-3 relevant precedents depending on how many successful optimisations have occurred, demonstrating progressive learning without model retraining
 
 ## Scope, Constraints and Implementation Decisions
 The system adheres to best practices such as separation of concerns and keeping the codebase modular for testability and future extensibility. 
