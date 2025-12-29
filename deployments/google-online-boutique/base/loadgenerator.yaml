@@ -21,75 +21,61 @@ spec:
   template:
     metadata:
       annotations:
-        kubectl.kubernetes.io/restartedAt: "2025-10-13T20:28:16+08:00"
-        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+        kubectl.kubernetes.io/restartedAt: '2025-10-13T20:28:16+08:00'
+        sidecar.istio.io/rewriteAppHTTPProbers: 'true'
       creationTimestamp: null
       labels:
         app: loadgenerator
     spec:
       containers:
-        - env:
-            - name: FRONTEND_ADDR
-              value: frontend:80
-            - name: USERS
-              value: "100"
-            - name: RATE
-              value: "50"
-          image: us-central1-docker.pkg.dev/google-samples/microservices-demo/loadgenerator:v0.10.3
-          imagePullPolicy: IfNotPresent
-          name: main
-          resources:
-            limits:
-              cpu: 500m
-              memory: 512Mi
-            requests:
-              cpu: 300m
-              memory: 256Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
+      - env:
+        - name: FRONTEND_ADDR
+          value: frontend:80
+        - name: USERS
+          value: '100'
+        - name: RATE
+          value: '50'
+        image: us-central1-docker.pkg.dev/google-samples/microservices-demo/loadgenerator:v0.10.3
+        imagePullPolicy: IfNotPresent
+        name: main
+        resources:
+          requests:
+            cpu: 150m
+            memory: 375Mi
+          limits:
+            cpu: 300m
+            memory: 750Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       dnsPolicy: ClusterFirst
       initContainers:
-        - command:
-            - /bin/sh
-            - -exc
-            - |
-              MAX_RETRIES=12
-              RETRY_INTERVAL=10
-              for i in $(seq 1 $MAX_RETRIES); do
-                echo "Attempt $i: Pinging frontend: ${FRONTEND_ADDR}..."
-                STATUSCODE=$(wget --server-response http://${FRONTEND_ADDR} 2>&1 | awk '/^  HTTP/{print $2}')
-                if [ $STATUSCODE -eq 200 ]; then
-                    echo "Frontend is reachable."
-                    exit 0
-                fi
-                echo "Error: Could not reach frontend - Status code: ${STATUSCODE}"
-                sleep $RETRY_INTERVAL
-              done
-              echo "Failed to reach frontend after $MAX_RETRIES attempts."
-              exit 1
-          env:
-            - name: FRONTEND_ADDR
-              value: frontend:80
-          image: busybox:latest
-          imagePullPolicy: Always
-          name: frontend-check
-          resources: {}
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-          terminationMessagePath: /dev/termination-log
-          terminationMessagePolicy: File
+      - command:
+        - /bin/sh
+        - -exc
+        - "MAX_RETRIES=12\nRETRY_INTERVAL=10\nfor i in $(seq 1 $MAX_RETRIES); do\n  echo \"Attempt $i: Pinging frontend: ${FRONTEND_ADDR}...\"\n  STATUSCODE=$(wget --server-response http://${FRONTEND_ADDR} 2>&1 | awk '/^  HTTP/{print $2}')\n  if [ $STATUSCODE -eq 200 ]; then\n      echo \"Frontend is reachable.\"\n      exit 0\n  fi\n  echo \"Error: Could not reach frontend - Status code: ${STATUSCODE}\"\n  sleep $RETRY_INTERVAL\ndone\necho \"Failed to reach frontend after $MAX_RETRIES attempts.\"\nexit 1\n"
+        env:
+        - name: FRONTEND_ADDR
+          value: frontend:80
+        image: busybox:latest
+        imagePullPolicy: Always
+        name: frontend-check
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext:
