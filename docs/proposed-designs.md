@@ -69,7 +69,7 @@ It causes:
 
 **Reason**: The solution is to move to a **Push-based, Event-Driven Architecture**. Instead of the agent asking for data, wasting resources and bandwidth (in production), the **Metric Hub** acts as a central aggregator that pushes jobs to the agent only when action is needed.
 
-Details on the Metric Hub design: [Metric Hub](./docs/metric-hub.md) 
+Details on the Metric Hub design: [Metric Hub](./metric-hub.md) 
 
 <img src="../img/metric-hub.png" alt="metric-hub" width="700">
 

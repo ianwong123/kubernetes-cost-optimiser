@@ -180,4 +180,5 @@ In production, the Learner Server would run as a Kubernetes service behind an in
 
 Reference to the tunnel service documentation: [Localhost.run](https://localhost.run/docs/)
 
-_Arigato localhost.run for saving me \(シ\_ \_ \)シ_
+_Arigato localhost.run for saving me_ 
+
