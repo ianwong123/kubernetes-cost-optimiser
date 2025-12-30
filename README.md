@@ -13,10 +13,9 @@ In this README:
 * [Architecture](#architecture)
 * [Agent Lifecycle](#agent-lifecycle)
 * [Scope, Constraints, and Implementation Decisions](#scope-constraints-and-implementation-decisions)
-* [Project Status](#project-status)
+* [Results and Evaluation](#results-and-evaluation)
 * [Further Reading](#further-reading)
-
-<!--* [Future Work and Some Reflection](#future-work-and-some-reflection)-->
+* [Future Work and Reflections](#future-work-and-reflections)
 
 ## The Problem
 "You pay for what you request, not what you use."
@@ -62,7 +61,7 @@ The system runs as a continuous, event-driven loop across four layers:
 * **ArgoCD** watches the Git repo and applies merged changes to the cluster
 
 ## Architecture 
-<img src="img/architecture.png" alt="Architecture Diagram" width="700">
+<img src="img/architecture.png" alt="Architecture Diagram" width="1000">
 
 ## Agent Lifecycle
 A detailed breakdown of the agent's state machine and execution flow: [Agent Design](./docs/agent-design.md)
@@ -70,7 +69,7 @@ A detailed breakdown of the agent's state machine and execution flow: [Agent Des
 <img src="img/agent-lifecycle.png" alt="Agent Lifecycle Diagram" width="1000">
 
 
-> **Real-Time Learning:** Each merged PR immediately updates the knowledge base. The agent retrieves 0-3 relevant precedents depending on how many successful optimisations have occurred, demonstrating progressive learning without model retraining
+> **Real-Time Learning:** Each merged PR immediately updates the knowledge base. The agent retrieves 3 relevant precedents depending on how many successful optimisations have occurred, demonstrating progressive learning without model retraining
 
 ## Scope, Constraints and Implementation Decisions
 The system adheres to best practices such as separation of concerns and keeping the codebase modular for testability and future extensibility. 
@@ -98,25 +97,36 @@ or any sort of design that introduces additional complexity and overhead towards
 
 > **Note:** This is a prototype demonstrating feasibility of AI-driven Kubernetes cost optimisation. It is **not production-ready.**
 
-## Project Status
-- [x] Infrastructure deployed and operational 
-- [x] Optimisation pipeline functional  
-- [x] Agent successfully creates PRs with reasoning  
-- [x] Feedback loop captures validated decisions  
-- [x] Agent successfully retrieves relevant past optimisation from memory (RAG)  
-- [ ] Fine-tuning LLM prompt for waste reduction accuracy  
-- [ ] Evaluation against VPA baseline in progress  
+## Results and Evaluation
+The system was evaluated against the **Vertical Pod Autoscaler (VPA)** using the Google Online Boutique workload.
+
+| Metric | Baseline | Agent Optimisation | VPA (Reference) |
+| :--- | :--- | :--- | :--- |
+| **VM Count** | 12 | **5** | 3 - 4 |
+| **Cost/Hour** | £0.48 | **£0.20** | £0.12 - £0.16 |
+| **Reduction** | - | **58%** | ~67-75% |
+
+> **Note on Trade-offs:** While VPA achieves higher raw savings, the agent prioritises **stability**. It enforces a safety buffer and maintains explainability via Chain-of-Thought reasoning.
+
+Evaluation report and analysis here: [Evaluation](./docs/evaluation.md)
 
 ## Further Reading
 * [Agent Design](./docs/agent-design.md) - Agent lifecycle design and state machine 
 * [Cost Model](./docs/cost-model.md) - Cost calculation methodology
+* [Evaluation](./docs/evaluation.md) - Evaluation results
 * [Metric Hub](./docs/metric-hub.md) - Metric Hub design 
 * [Proposed Designs](./docs/proposed-designs.md) - Previously proposed designs, rejected approaches, challenges, and outcomes
-<!--* [Testing Strategy](./docs/testing.md) - Test strategies and validation -->
+* [Testing Strategy](./docs/testing.md) - Test strategies and validation
 
-<!--
-## Future Work and Some Reflection
-This project started simply out of curiousity. Because I wanted to know whether an agent could reduce Kubernetes cost and thought it'll be interesting to take on this challenge, albeit I don't have any production experience and with tools like KEDA or CA.  The current system remains a prototype, validated using a sample workload, and is still undergoing continuous improvements. Since it is designed with extensibility in mind to support broader deployment scenarios and more robust operational features, one could extend and swap out concrete implementations such as the Redis Queue.
+
+## Future Work and Reflections
+This project started out of genuine curiousity. I kept reading about cost efficiencies and in the cloud industry while autonomous agents were becoming a growing topic of interest across the IT industry. So I thought:
+
+_"Why not try building something to see whether an autonomous agent could actually reduce infrastructure cost?"_
+
+This is despite having no real production experience, and only some exposure to several industry tools. Still, it felt like an interesting problem to explore, so I decided to take on the challenge and see how far I could push it.
+
+The current system remains a prototype, validated using a sample workload, and is still undergoing continuous improvements. Since it is designed with extensibility in mind, one could easily swap out concrete implementations (like the Redis Queue) for more robust solutions.
 
 Some potential extensions include:
 * Extend to multi-namespace cost aggregation
@@ -125,27 +135,25 @@ Some potential extensions include:
 * Allowing configuration through a single YAML file for containing VM types, names, and provider details to decouple the system from cluster-specific assumptions
 * Add priority queuing for risk-based alert handling
 
-It's unlikely that I would be maintaining this as a long-term maintained project. There are other areas I would rather focus on exploring and improving next. However, i'll come back to this project from time to time in the near future to see what kind of changes I could make from the new experiences I look forward to.
+### Final Thoughts
+It's unlikely that I will maintain this as a long-term project, as there are other areas I want to explore next. However, I plan to revisit it occasionally to apply new techniques as I learn them.
+
+My next project will likely focus on developer experience, inspired by on one of the challenges found here. Specifically, spinning up some preview environment in the cluster to test code before making PRs, and destroy automatically when its done.
 
 _Hi job market, pls be kind_ (┳◡┳)
 
-### Ok but with that said (눈_눈) 
-This is one of the first times I have designed and implemented a system from start to finish. It's not the best, there are certainly better ways to do this, and in a more realistic production setting, I expect tools and data to be more diverse and complex than this.
+### With that said... (눈_눈) 
+This is one of the first times I have designed and implemented a system of this complexity from start to finish. It's not the best, there are certainly far better ways to build this, and in a more realistic production setting, I expect tools, data, and constraints to be more diverse and complex than this.
 
-But for the scope of this project, I'm genuinely really satisfied with the outcome ┐(´～｀)┌ 
+But for the scope of this project, I'm genuinely really proud and satisfied with the outcome ┐(´～｀)┌ 
 
-I've given my all using the cards at hand and learned a lot through this project. What more could I have asked for? _Probably some more feedback_   
+I gave my all using the resources I had, and I shall end it here.
 
+**I rest my case.**
 
-The next project will likely focus on improving developer experience, inspired by on one of the challenges found here. Probably something that can spin up a test environment in the cluster to test code before creating some pull request or pushing changes, and destroy automatically when its done.
+~ Ian 
 
+(シ_ _)シ
 
-Anyway, thuo shalt end here.
-
-I rest my case.
-
-~ Ian (シ_ _)シ
-
-_"It works on my machine"_-->
 
 > **Note**: This is an independent project, not affiliated with Google or any cloud provider.
