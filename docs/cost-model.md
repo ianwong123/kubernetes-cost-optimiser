@@ -45,7 +45,7 @@ $$
 \text{CPU VMs} &= \lceil 3.6 / 2 \rceil = \lceil 1.8 \rceil = 2 \\
 \text{Memory VMs} &= \lceil 9 / 4 \rceil = \lceil 2.25 \rceil = 3 \\
 \text{VMs Needed} &= \max(2, 3) = 3 \\
-\text{Cost} &= 2 \times \$0.04 = \$0.08 \text{ per hour}
+\text{Cost} &= 3 \times \$0.04 = \$0.12 \text{ per hour}
 \end{aligned}
 $$
 
@@ -57,4 +57,4 @@ This calculates the **theoretical minimum** number of VMs required to fit all po
 * Additional costs for storage, networking, load balancers, and other cloud services remain outside scope
 * The model calculates optimal packing but doesn't account for real-world scheduling constraints like node affinity rules or mixed workload patterns that can increase the actual VM count needed.
 
-*The current model focuses on establishing the core cost optimisation concept. Additional cost factors will be integrated once the main resource right-sizing mechanism is validated.*
+> Note: The current model focuses on establishing the core cost optimisation concept.
